@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Certificate;
+use App\Models\Course;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class CertificateController extends Controller
+{
+    public function index()
+    {
+        $certificates = auth()->user()->certificates()
+            ->with(['course'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return Inertia::render('certificates/index', [
+            'certificates' => $certificates,
+        ]);
+    }
+
+    public function show(Certificate $certificate)
+    {
+        if ($certificate->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return Inertia::render('certificates/show', [
+            'certificate' => $certificate->load(['course', 'user']),
+        ]);
+    }
+
+    public function generate(Course $course)
+    {
+        // ตรวจสอบว่าผู้ใช้เรียนจบหลักสูตรแล้วหรือไม่
+        $enrollment = auth()->user()->enrolledCourses()
+            ->where('course_id', $course->id)
+            ->where('status', 'completed')
+            ->first();
+
+        if (!$enrollment) {
+            return redirect()->back()->with('error', 'คุณต้องเรียนจบหลักสูตรก่อนจึงจะได้รับใบประกาศนียบัตร');
+        }
+
+        // ตรวจสอบว่ามีใบประกาศอยู่แล้วหรือไม่
+        $existingCertificate = Certificate::where('user_id', auth()->id())
+            ->where('course_id', $course->id)
+            ->first();
+
+        if ($existingCertificate) {
+            return redirect()->route('certificates.show', $existingCertificate)
+                ->with('info', 'คุณมีใบประกาศนียบัตรสำหรับหลักสูตรนี้แล้ว');
+        }
+
+        // คำนวณคะแนนรวม
+        $totalScore = 0;
+        $totalQuizzes = 0;
+        
+        foreach ($course->lessons as $lesson) {
+            $quiz = $lesson->quiz()->first();
+            if ($quiz) {
+                $attempt = $quiz->getUserAttempt(auth()->id());
+                if ($attempt && $attempt->completed_at) {
+                    $totalScore += $attempt->percentage;
+                    $totalQuizzes++;
+                }
+            }
+        }
+
+        $finalScore = $totalQuizzes > 0 ? $totalScore / $totalQuizzes : 0;
+
+        // สร้างใบประกาศ
+        $certificate = Certificate::create([
+            'user_id' => auth()->id(),
+            'course_id' => $course->id,
+            'certificate_number' => Certificate::generateCertificateNumber(),
+            'final_score' => $finalScore,
+            'issued_at' => now(),
+            'expires_at' => now()->addYears(2), // หมดอายุใน 2 ปี
+        ]);
+
+        return redirect()->route('certificates.show', $certificate)
+            ->with('success', 'สร้างใบประกาศนียบัตรสำเร็จ');
+    }
+
+    public function download(Certificate $certificate)
+    {
+        if ($certificate->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // สร้าง PDF ใบประกาศ
+        // ใช้ library เช่น DomPDF หรือ TCPDF
+        // สำหรับตอนนี้จะ redirect ไปหน้าแสดงใบประกาศ
+        
+        return redirect()->route('certificates.show', $certificate);
+    }
+}
