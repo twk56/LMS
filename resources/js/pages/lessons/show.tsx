@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Edit, PlayCircle, FileText } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -70,7 +70,7 @@ export default function LessonShow({ lesson, course, nextLesson, previousLesson,
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="sm" asChild>
-                            <a href={route('courses.show', course.id)}>
+                            <a href={`/courses/${course.id}`}>
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 กลับไปหลักสูตร
                             </a>
@@ -85,19 +85,26 @@ export default function LessonShow({ lesson, course, nextLesson, previousLesson,
                     <div className="flex gap-2">
                         {isAdmin && (
                             <Button variant="outline" asChild>
-                                <a href={route('courses.lessons.edit', [course.id, lesson.id])}>
+                                <a href={`/lessons/${lesson.id}/edit`}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     แก้ไข
                                 </a>
                             </Button>
                         )}
                         {!isAdmin && lesson.status === 'published' && !isCompleted && (
-                            <Form method="post" action={route('courses.lessons.complete', [course.id, lesson.id])}>
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                router.post(`/courses/${course.id}/lessons/${lesson.id}/complete`, {}, {
+                                    onError: (errors: any) => {
+                                        console.error('Error enrolling in lesson:', errors);
+                                    }
+                                });
+                            }}>
                                 <Button type="submit">
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     เสร็จสิ้นบทเรียน
                                 </Button>
-                            </Form>
+                            </form>
                         )}
                     </div>
                 </div>
@@ -235,7 +242,7 @@ export default function LessonShow({ lesson, course, nextLesson, previousLesson,
                                 <div className="space-y-2">
                                     {previousLesson && (
                                         <Button variant="outline" className="w-full justify-start" asChild>
-                                            <a href={route('courses.lessons.show', [course.id, previousLesson.id])}>
+                                            <a href={`/lessons/${previousLesson.id}`}>
                                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                                 บทเรียนก่อนหน้า
                                             </a>
@@ -243,20 +250,20 @@ export default function LessonShow({ lesson, course, nextLesson, previousLesson,
                                     )}
                                     {nextLesson && (
                                         <Button className="w-full justify-start" asChild>
-                                            <a href={route('courses.lessons.show', [course.id, nextLesson.id])}>
+                                            <a href={`/lessons/${nextLesson.id}`}>
                                                 บทเรียนถัดไป
                                                 <ArrowRight className="ml-2 h-4 w-4" />
                                             </a>
                                         </Button>
                                     )}
                                     <Button variant="outline" className="w-full justify-start" asChild>
-                                        <a href={route('courses.lessons.files.index', [course.id, lesson.id])}>
+                                        <a href={`/lessons/${lesson.id}/files`}>
                                             <FileText className="mr-2 h-4 w-4" />
                                             ไฟล์ในบทเรียน
                                         </a>
                                     </Button>
                                     <Button variant="ghost" className="w-full" asChild>
-                                        <a href={route('courses.show', course.id)}>
+                                        <a href={`/courses/${course.id}`}>
                                             <BookOpen className="mr-2 h-4 w-4" />
                                             กลับไปหลักสูตร
                                         </a>
@@ -272,7 +279,7 @@ export default function LessonShow({ lesson, course, nextLesson, previousLesson,
                     <div>
                         {previousLesson && (
                             <Button variant="outline" asChild>
-                                <a href={route('courses.lessons.show', [course.id, previousLesson.id])}>
+                                <a href={`/lessons/${previousLesson.id}`}>
                                     <ArrowLeft className="mr-2 h-4 w-4" />
                                     บทเรียนก่อนหน้า: {previousLesson.title}
                                 </a>
@@ -282,7 +289,7 @@ export default function LessonShow({ lesson, course, nextLesson, previousLesson,
                     <div>
                         {nextLesson && (
                             <Button asChild>
-                                <a href={route('courses.lessons.show', [course.id, nextLesson.id])}>
+                                <a href={`/lessons/${nextLesson.id}`}>
                                     บทเรียนถัดไป: {nextLesson.title}
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </a>

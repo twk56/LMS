@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Http\Requests\StoreLessonRequest;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Storage; // Added for file handling
@@ -16,9 +19,54 @@ class LessonController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Course $course = null): Response
     {
-        //
+        if ($course) {
+            // Course-specific lessons
+            $lessons = $course->lessons()->orderBy('order')->get();
+            
+            // Calculate stats for this course
+            $stats = [
+                'total_lessons' => $lessons->count(),
+                'published_lessons' => $lessons->where('status', 'published')->count(),
+                'draft_lessons' => $lessons->where('status', 'draft')->count(),
+                'video_lessons' => $lessons->where('content_type', 'video')->count(),
+                'document_lessons' => $lessons->where('content_type', 'document')->count(),
+            ];
+            
+            return Inertia::render('lessons/index', [
+                'course' => $course,
+                'lessons' => $lessons,
+                'stats' => $stats,
+                'isAdmin' => Auth::user()->role === 'admin',
+            ]);
+        } else {
+            // All lessons across all courses
+            $user = Auth::user();
+            $lessons = Lesson::with(['course', 'creator'])
+                ->when($user->role !== 'admin', function ($query) {
+                    $query->whereHas('course', function ($q) {
+                        $q->where('status', 'published');
+                    });
+                })
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Calculate stats for all lessons
+            $stats = [
+                'total_lessons' => $lessons->count(),
+                'published_lessons' => $lessons->where('status', 'published')->count(),
+                'draft_lessons' => $lessons->where('status', 'draft')->count(),
+                'video_lessons' => $lessons->where('content_type', 'video')->count(),
+                'document_lessons' => $lessons->where('content_type', 'document')->count(),
+            ];
+            
+            return Inertia::render('lessons/index', [
+                'lessons' => $lessons,
+                'stats' => $stats,
+                'isAdmin' => $user->role === 'admin',
+            ]);
+        }
     }
 
     /**
@@ -34,84 +82,19 @@ class LessonController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, Course $course)
+    public function store(StoreLessonRequest $request, Course $course)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'content_type' => 'nullable|in:text,rich_text,video,file',
-            'order' => 'nullable|integer|min:0',
-            'status' => 'required|in:draft,published',
-            'youtube_url' => [
-    'nullable',
-    'url',
-    'regex:/^https:\/\/(www\.)?youtube\.com\/watch\?v=[a-zA-Z0-9_-]+$|^https:\/\/youtu\.be\/[a-zA-Z0-9_-]+$/'
-],
-            'files.*' => 'nullable|file|max:2048', // 2MB max per file (reduced from 10MB)
-            'file_titles.*' => 'nullable|string|max:255',
-            'file_descriptions.*' => 'nullable|string',
-        ]);
-
-        try {
-            $lesson = $course->lessons()->create([
-                'title' => $request->title,
-                'content' => $request->content,
-                'content_type' => $request->content_type ?? 'text',
-                'order' => $request->order ?? $course->lessons()->count(),
-                'status' => $request->status,
-                'youtube_url' => $request->youtube_url,
-            ]);
-
-            // Handle file uploads
-            if ($request->hasFile('files')) {
-                foreach ($request->file('files') as $index => $file) {
-                    if ($file->isValid()) {
-                        $filename = time() . '_' . $file->getClientOriginalName();
-                        $filePath = $file->storeAs('lesson-files/' . $lesson->id, $filename, 'public');
-
-                        // Determine file type
-                        $mimeType = $file->getMimeType();
-                        $fileType = $this->getFileType($mimeType);
-
-                        $lesson->files()->create([
-                            'filename' => $filename,
-                            'original_name' => $file->getClientOriginalName(),
-                            'file_path' => $filePath,
-                            'file_type' => $fileType,
-                            'mime_type' => $mimeType,
-                            'file_size' => $file->getSize(),
-                            'title' => $request->input("file_titles.{$index}"),
-                            'description' => $request->input("file_descriptions.{$index}"),
-                            'order' => $lesson->files()->count(),
-                        ]);
-                    } else {
-                        Log::warning('Invalid file upload', [
-                            'file' => $file->getClientOriginalName(),
-                            'error' => $file->getError()
-                        ]);
-                    }
-                }
-            }
-
-            return redirect()->route('courses.show', $course)->with('success', 'บทเรียนถูกสร้างสำเร็จ!');
-        } catch (\Exception $e) {
-            Log::error('Error creating lesson', [
-                'course_id' => $course->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['error' => 'เกิดข้อผิดพลาดในการสร้างบทเรียน: ' . $e->getMessage()]);
-        }
+        $course->lessons()->create($request->validated());
+        return Redirect::route('courses.lessons.index', $course)
+            ->with('success', 'Lesson created.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Course $course, Lesson $lesson): Response
+    public function show(Lesson $lesson): Response
     {
+        $course = $lesson->course;
         $lesson->load('course');
         
         $nextLesson = $lesson->nextLesson();
@@ -139,8 +122,9 @@ class LessonController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Course $course, Lesson $lesson): Response
+    public function edit(Lesson $lesson): Response
     {
+        $course = $lesson->course;
         return Inertia::render('lessons/edit', [
             'lesson' => $lesson,
             'course' => $course,
@@ -150,7 +134,7 @@ class LessonController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Course $course, Lesson $lesson)
+    public function update(Request $request, Lesson $lesson)
     {
         $request->validate([
             'title' => 'required|string|max:255',
@@ -167,14 +151,16 @@ class LessonController extends Controller
 
         $lesson->update($request->only(['title', 'content', 'content_type', 'order', 'status', 'youtube_url']));
 
+        $course = $lesson->course;
         return redirect()->route('courses.show', $course)->with('success', 'Lesson updated successfully!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Course $course, Lesson $lesson)
+    public function destroy(Lesson $lesson)
     {
+        $course = $lesson->course;
         $lesson->delete();
 
         return redirect()->route('courses.show', $course)->with('success', 'Lesson deleted successfully!');

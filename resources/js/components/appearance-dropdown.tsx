@@ -1,53 +1,59 @@
+import { Moon, Sun, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAppearance } from '@/hooks/use-appearance';
-import { Monitor, Moon, Sun } from 'lucide-react';
-import { HTMLAttributes } from 'react';
 
-export default function AppearanceToggleDropdown({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
+export function AppearanceDropdown() {
     const { appearance, updateAppearance } = useAppearance();
 
-    const getCurrentIcon = () => {
-        switch (appearance) {
+    const getThemeIcon = () => {
+        switch (appearance.theme) {
             case 'dark':
-                return <Moon className="h-5 w-5" />;
+                return <Moon className="h-4 w-4" />;
             case 'light':
-                return <Sun className="h-5 w-5" />;
+                return <Sun className="h-4 w-4" />;
+            case 'system':
+                return <Monitor className="h-4 w-4" />;
             default:
-                return <Monitor className="h-5 w-5" />;
+                return <Monitor className="h-4 w-4" />;
+        }
+    };
+
+    const getThemeLabel = () => {
+        switch (appearance.theme) {
+            case 'dark':
+                return 'Dark';
+            case 'light':
+                return 'Light';
+            case 'system':
+                return 'System';
+            default:
+                return 'System';
         }
     };
 
     return (
-        <div className={className} {...props}>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-md">
-                        {getCurrentIcon()}
-                        <span className="sr-only">Toggle theme</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => updateAppearance('light')}>
-                        <span className="flex items-center gap-2">
-                            <Sun className="h-5 w-5" />
-                            Light
-                        </span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => updateAppearance('dark')}>
-                        <span className="flex items-center gap-2">
-                            <Moon className="h-5 w-5" />
-                            Dark
-                        </span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => updateAppearance('system')}>
-                        <span className="flex items-center gap-2">
-                            <Monitor className="h-5 w-5" />
-                            System
-                        </span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    {getThemeIcon()}
+                    <span className="sr-only">Toggle theme</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => updateAppearance({ theme: 'light' })}>
+                    <Sun className="mr-2 h-4 w-4" />
+                    <span>Light</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateAppearance({ theme: 'dark' })}>
+                    <Moon className="mr-2 h-4 w-4" />
+                    <span>Dark</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateAppearance({ theme: 'system' })}>
+                    <Monitor className="mr-2 h-4 w-4" />
+                    <span>System</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

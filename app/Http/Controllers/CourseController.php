@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\CourseCategory;
+use App\Http\Requests\StoreCourseRequest;
+use App\Http\Requests\UpdateCourseRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
@@ -92,53 +94,25 @@ class CourseController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreCourseRequest $request)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'image' => 'nullable|string|max:500',
-                'category_id' => 'nullable|exists:course_categories,id',
-                'status' => 'required|in:draft,published',
-            ]);
+        $course = Course::create([
+            'title' => $request->validated('title'),
+            'description' => $request->validated('description'),
+            'image' => $request->validated('image'),
+            'category_id' => $request->validated('category_id'),
+            'status' => $request->validated('status'),
+            'created_by' => Auth::id(),
+        ]);
 
-            if ($validator->fails()) {
-                return redirect()->back()
-                    ->withInput()
-                    ->withErrors($validator);
-            }
+        Log::info('Course created successfully', [
+            'course_id' => $course->id,
+            'user_id' => Auth::id(),
+            'title' => $course->title
+        ]);
 
-            $course = Course::create([
-                'title' => $request->title,
-                'description' => $request->description,
-                'image' => $request->image,
-                'category_id' => $request->category_id,
-                'status' => $request->status,
-                'created_by' => Auth::id(),
-            ]);
-
-            Log::info('Course created successfully', [
-                'course_id' => $course->id,
-                'user_id' => Auth::id(),
-                'title' => $course->title
-            ]);
-
-            return redirect()->route('courses.show', $course)
-                ->with('success', 'สร้างหลักสูตรสำเร็จ!');
-
-        } catch (Exception $e) {
-            Log::error('Error creating course', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['error' => 'เกิดข้อผิดพลาดในการสร้างหลักสูตร: ' . $e->getMessage()]);
-        }
+        return Redirect::route('courses.show', $course)
+            ->with('success', 'Course created successfully!');
     }
 
     /**
@@ -202,49 +176,20 @@ class CourseController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Course $course)
+    public function update(UpdateCourseRequest $request, Course $course)
     {
-        try {
-            $this->authorize('update', $course);
+        $this->authorize('update', $course);
 
-            $validator = Validator::make($request->all(), [
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'image' => 'nullable|string|max:500',
-                'category_id' => 'nullable|exists:course_categories,id',
-                'status' => 'required|in:draft,published',
-            ]);
+        $course->update($request->validated());
 
-            if ($validator->fails()) {
-                return redirect()->back()
-                    ->withInput()
-                    ->withErrors($validator);
-            }
+        Log::info('Course updated successfully', [
+            'course_id' => $course->id,
+            'user_id' => Auth::id(),
+            'title' => $course->title
+        ]);
 
-            $course->update($request->only(['title', 'description', 'image', 'category_id', 'status']));
-
-            Log::info('Course updated successfully', [
-                'course_id' => $course->id,
-                'user_id' => Auth::id(),
-                'title' => $course->title
-            ]);
-
-            return redirect()->route('courses.show', $course)
-                ->with('success', 'อัปเดตหลักสูตรสำเร็จ!');
-
-        } catch (Exception $e) {
-            Log::error('Error updating course', [
-                'course_id' => $course->id,
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['error' => 'เกิดข้อผิดพลาดในการอัปเดตหลักสูตร: ' . $e->getMessage()]);
-        }
+        return Redirect::route('courses.show', $course)
+            ->with('success', 'Course updated successfully!');
     }
 
     /**

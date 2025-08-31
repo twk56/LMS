@@ -1,6 +1,7 @@
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage, useForm, router } from '@inertiajs/react';
+import { useState } from 'react';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -20,6 +21,24 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
     const { auth } = usePage<SharedData>().props;
+    const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+    const { data, setData, patch, processing, errors, recentlySuccessful } = useForm({
+        name: auth.user?.name || '',
+        email: auth.user?.email || '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        patch('/profile', {
+            preserveScroll: true,
+            onError: (errors) => {
+                console.error('Profile update failed:', errors);
+            },
+            onSuccess: () => {
+                console.log('Profile updated successfully');
+            }
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -29,15 +48,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                 <div className="space-y-6">
                     <HeadingSmall title="Profile information" description="Update your name and email address" />
 
-                    <Form
-                        method="patch"
-                        action={route('profile.update')}
-                        options={{
-                            preserveScroll: true,
-                        }}
-                        className="space-y-6"
-                    >
-                        {({ processing, recentlySuccessful, errors }) => (
+                    <form onSubmit={handleSubmit} className="space-y-6">
                             <>
                                 <div className="grid gap-2">
                                     <Label htmlFor="name">Name</Label>
@@ -45,14 +56,19 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                     <Input
                                         id="name"
                                         className="mt-1 block w-full"
-                                        defaultValue={auth.user.name}
-                                        name="name"
+                                        value={data.name}
+                                        onChange={(e) => setData('name', e.target.value)}
                                         required
                                         autoComplete="name"
                                         placeholder="Full name"
+                                        aria-describedby={errors.name ? "name-error" : undefined}
                                     />
 
-                                    <InputError className="mt-2" message={errors.name} />
+                                    <InputError 
+                                        id="name-error"
+                                        className="mt-2" 
+                                        message={errors.name} 
+                                    />
                                 </div>
 
                                 <div className="grid gap-2">
@@ -62,28 +78,45 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                         id="email"
                                         type="email"
                                         className="mt-1 block w-full"
-                                        defaultValue={auth.user.email}
-                                        name="email"
+                                        value={data.email}
+                                        onChange={(e) => setData('email', e.target.value)}
                                         required
                                         autoComplete="username"
                                         placeholder="Email address"
+                                        aria-describedby={errors.email ? "email-error" : undefined}
                                     />
 
-                                    <InputError className="mt-2" message={errors.email} />
+                                    <InputError 
+                                        id="email-error"
+                                        className="mt-2" 
+                                        message={errors.email} 
+                                    />
                                 </div>
 
-                                {mustVerifyEmail && auth.user.email_verified_at === null && (
+                                {mustVerifyEmail && auth.user?.email_verified_at === null && (
                                     <div>
                                         <p className="-mt-4 text-sm text-muted-foreground">
                                             Your email address is unverified.{' '}
-                                            <Link
-                                                href={route('verification.send')}
-                                                method="post"
-                                                as="button"
-                                                className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                            <button
+                                                type="button"
+                                                disabled={isVerifyingEmail}
+                                                onClick={() => {
+                                                    setIsVerifyingEmail(true);
+                                                    router.post('/email/verification-notification', {}, {
+                                                        onError: (errors) => {
+                                                            console.error('Email verification request failed:', errors);
+                                                            setIsVerifyingEmail(false);
+                                                        },
+                                                        onSuccess: () => {
+                                                            console.log('Email verification request sent');
+                                                            setIsVerifyingEmail(false);
+                                                        }
+                                                    });
+                                                }}
+                                                className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                Click here to resend the verification email.
-                                            </Link>
+                                                {isVerifyingEmail ? 'Sending...' : 'Click here to resend the verification email.'}
+                                            </button>
                                         </p>
 
                                         {status === 'verification-link-sent' && (
@@ -95,7 +128,13 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                 )}
 
                                 <div className="flex items-center gap-4">
-                                    <Button disabled={processing}>Save</Button>
+                                    <Button 
+                                        type="submit"
+                                        disabled={processing}
+                                        className="min-w-[100px]"
+                                    >
+                                        {processing ? 'Saving...' : 'Save'}
+                                    </Button>
 
                                     <Transition
                                         show={recentlySuccessful}
@@ -104,12 +143,11 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                         leave="transition ease-in-out"
                                         leaveTo="opacity-0"
                                     >
-                                        <p className="text-sm text-neutral-600">Saved</p>
+                                        <p className="text-sm text-green-600 dark:text-green-400">Saved successfully!</p>
                                     </Transition>
                                 </div>
                             </>
-                        )}
-                    </Form>
+                    </form>
                 </div>
 
                 <DeleteUser />

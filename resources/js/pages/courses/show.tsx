@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { ArrowLeft, BookOpen, Edit, Plus, Trash2, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,7 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="sm" asChild>
-                            <a href={route('courses.index')}>
+                            <a href="/courses">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 กลับ
                             </a>
@@ -81,7 +81,7 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                         {isAdmin && (
                             <>
                                 <Button variant="outline" asChild>
-                                    <a href={route('courses.edit', course.id)}>
+                                    <a href={`/courses/${course.id}/edit`}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         แก้ไข
                                     </a>
@@ -102,23 +102,37 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                                             </DialogDescription>
                                         </DialogHeader>
                                         <DialogFooter>
-                                            <Form method="delete" action={route('courses.destroy', course.id)}>
+                                            <form onSubmit={(e) => {
+                                                e.preventDefault();
+                                                router.delete(`/courses/${course.id}`, {
+                                                    onError: (errors) => {
+                                                        console.error('Course deletion failed:', errors);
+                                                    }
+                                                });
+                                            }}>
                                                 <Button type="submit" variant="destructive">
                                                     ลบหลักสูตร
                                                 </Button>
-                                            </Form>
+                                            </form>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
                             </>
                         )}
                         {!isEnrolled && !isAdmin && (
-                            <Form method="post" action={route('courses.enroll', course.id)}>
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                router.post(`/courses/${course.id}/enroll`, {}, {
+                                    onError: (errors: any) => {
+                                        console.error('Error enrolling in course:', errors);
+                                    }
+                                });
+                            }}>
                                 <Button type="submit">
                                     <BookOpen className="mr-2 h-4 w-4" />
                                     ลงทะเบียนเรียน
                                 </Button>
-                            </Form>
+                            </form>
                         )}
                     </div>
                 </div>
@@ -145,7 +159,7 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                                     <CardTitle>บทเรียน</CardTitle>
                                     {isAdmin && (
                                         <Button size="sm" asChild>
-                                            <a href={route('courses.lessons.create', course.id)}>
+                                            <a href={`/courses/${course.id}/lessons/create`}>
                                                 <Plus className="mr-2 h-4 w-4" />
                                                 เพิ่มบทเรียน
                                             </a>
@@ -170,7 +184,7 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                                         </p>
                                         {isAdmin && (
                                             <Button asChild>
-                                                <a href={route('courses.lessons.create', course.id)}>
+                                                <a href={`/courses/${course.id}/lessons/create`}>
                                                     <Plus className="mr-2 h-4 w-4" />
                                                     เพิ่มบทเรียนแรก
                                                 </a>
@@ -201,7 +215,7 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                                                         {isAdmin && (
                                                             <>
                                                                 <Button variant="ghost" size="sm" asChild>
-                                                                    <a href={route('courses.lessons.edit', [course.id, lesson.id])}>
+                                                                    <a href={`/lessons/${lesson.id}/edit`}>
                                                                         <Edit className="h-4 w-4" />
                                                                     </a>
                                                                 </Button>
@@ -220,11 +234,18 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                                                                             </DialogDescription>
                                                                         </DialogHeader>
                                                                         <DialogFooter>
-                                                                            <Form method="delete" action={route('courses.lessons.destroy', [course.id, lesson.id])}>
+                                                                            <form onSubmit={(e) => {
+                                                                                e.preventDefault();
+                                                                                router.delete(`/lessons/${lesson.id}`, {
+                                                                                    onError: (errors) => {
+                                                                                        console.error('Lesson deletion failed:', errors);
+                                                                                    }
+                                                                                });
+                                                                            }}>
                                                                                 <Button type="submit" variant="destructive">
                                                                                     ลบบทเรียน
                                                                                 </Button>
-                                                                            </Form>
+                                                                            </form>
                                                                         </DialogFooter>
                                                                     </DialogContent>
                                                                 </Dialog>
@@ -232,7 +253,7 @@ export default function CourseShow({ course, isAdmin, isEnrolled }: CourseShowPr
                                                         )}
                                                         {(isEnrolled || isAdmin) && lesson.status === 'published' && (
                                                             <Button size="sm" asChild>
-                                                                <a href={route('courses.lessons.show', [course.id, lesson.id])}>
+                                                                <a href={`/lessons/${lesson.id}`}>
                                                                     เรียน
                                                                 </a>
                                                             </Button>

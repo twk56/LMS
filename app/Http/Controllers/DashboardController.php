@@ -92,7 +92,10 @@ class DashboardController extends Controller
                 COUNT(DISTINCT l.id) as total_lessons,
                 COUNT(DISTINCT cu.user_id) as total_students,
                 COUNT(DISTINCT cert.id) as total_certificates,
-                AVG(cu.completion_percentage) as avg_completion
+                ROUND(
+                    (COUNT(DISTINCT CASE WHEN cu.status = 'completed' THEN cu.user_id END) * 100.0) / 
+                    NULLIF(COUNT(DISTINCT cu.user_id), 0), 2
+                ) as avg_completion
             FROM courses c
             LEFT JOIN lessons l ON c.id = l.course_id
             LEFT JOIN course_user cu ON c.id = cu.course_id
@@ -129,7 +132,10 @@ class DashboardController extends Controller
                 COUNT(DISTINCT cu.course_id) as enrolled_courses,
                 COUNT(DISTINCT lp.lesson_id) as completed_lessons,
                 COUNT(DISTINCT cert.id) as earned_certificates,
-                AVG(lp.completion_percentage) as avg_progress
+                ROUND(
+                    (COUNT(DISTINCT CASE WHEN lp.status = 'completed' THEN lp.lesson_id END) * 100.0) / 
+                    NULLIF(COUNT(DISTINCT lp.lesson_id), 0), 2
+                ) as avg_progress
             FROM course_user cu
             LEFT JOIN lesson_progress lp ON cu.user_id = lp.user_id 
                 AND lp.lesson_id IN (
@@ -169,8 +175,11 @@ class DashboardController extends Controller
             $analytics = DB::select("
                 SELECT 
                     COUNT(DISTINCT cu.user_id) as total_enrollments,
-                    COUNT(DISTINCT CASE WHEN cu.status = 'completed' THEN cu.user_id END) as completed_enrollments,
-                    AVG(CASE WHEN cu.status = 'completed' THEN cu.completion_percentage END) as avg_completion,
+                    COUNT(DISTINCT CASE WHEN lp.status = 'completed' THEN cu.user_id END) as completed_enrollments,
+                    ROUND(
+                        (COUNT(DISTINCT CASE WHEN lp.status = 'completed' THEN lp.lesson_id END) * 100.0) / 
+                        NULLIF(COUNT(DISTINCT lp.lesson_id), 0), 2
+                    ) as avg_completion,
                     COUNT(DISTINCT lp.lesson_id) as total_lessons_started,
                     COUNT(DISTINCT CASE WHEN lp.status = 'completed' THEN lp.lesson_id END) as total_lessons_completed
                 FROM course_user cu

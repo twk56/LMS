@@ -28,6 +28,12 @@ export interface SharedData {
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    flash?: {
+        success?: string;
+        error?: string;
+        warning?: string;
+        info?: string;
+    };
     [key: string]: unknown;
 }
 
@@ -40,4 +46,45 @@ export interface User {
     created_at: string;
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
+}
+
+export interface Course {
+    id: number;
+    title: string;
+    description?: string;
+    image?: string;
+    status: 'draft' | 'published' | 'archived';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Lesson {
+    id: number;
+    title: string;
+    description?: string;
+    content?: string;
+    order: number;
+    course_id: number;
+    status: 'draft' | 'published' | 'archived';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface LessonFile {
+    id: number;
+    name: string;
+    original_name: string;
+    file_path: string;
+    file_type: string;
+    mime_type: string;
+    file_size: number;
+    description?: string;
+    order: number;
+    is_active: boolean;
+    lesson_id: number;
+    url: string;
+    formatted_size: string;
+    icon: string;
+    created_at: string;
+    updated_at: string;
 }

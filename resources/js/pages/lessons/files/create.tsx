@@ -10,28 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'หน้าหลัก',
-        href: '/dashboard',
-    },
-    {
-        title: course.title,
-        href: route('courses.show', course.id),
-    },
-    {
-        title: lesson.title,
-        href: route('courses.lessons.show', [course.id, lesson.id]),
-    },
-    {
-        title: 'ไฟล์',
-        href: route('courses.lessons.files.index', [course.id, lesson.id]),
-    },
-    {
-        title: 'อัปโหลดไฟล์',
-        href: '#',
-    },
-];
+
 
 interface Course {
     id: number;
@@ -49,6 +28,29 @@ interface CreateFileProps {
 }
 
 export default function CreateFile({ course, lesson }: CreateFileProps) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'หน้าหลัก',
+            href: '/dashboard',
+        },
+        {
+            title: course.title,
+            href: route('courses.show', course.id),
+        },
+        {
+            title: lesson.title,
+            href: `/lessons/${lesson.id}`,
+        },
+        {
+            title: 'ไฟล์',
+            href: `/lessons/${lesson.id}/files`,
+        },
+        {
+            title: 'อัปโหลดไฟล์',
+            href: '#',
+        },
+    ];
+    
     const [files, setFiles] = useState<File[]>([]);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -83,7 +85,7 @@ export default function CreateFile({ course, lesson }: CreateFileProps) {
         formData.append('title', title);
         formData.append('description', description);
 
-        router.post(route('courses.lessons.files.store', [course.id, lesson.id]), formData, {
+        router.post(`/lessons/${lesson.id}/files`, formData, {
             onSuccess: () => {
                 setProcessing(false);
             },
@@ -101,7 +103,7 @@ export default function CreateFile({ course, lesson }: CreateFileProps) {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="sm" asChild>
-                            <a href={route('courses.lessons.files.index', [course.id, lesson.id])}>
+                            <a href={`/lessons/${lesson.id}/files`}>
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 กลับไปไฟล์
                             </a>

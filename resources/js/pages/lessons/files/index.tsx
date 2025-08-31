@@ -43,7 +43,11 @@ interface LessonFilesIndexProps {
 
 export default function LessonFilesIndex({ course, lesson, files }: LessonFilesIndexProps) {
   const handleDelete = (fileId: number) => {
-    router.delete(route('courses.lessons.files.destroy', [course.id, lesson.id, fileId]));
+    router.delete(`/courses/${course.id}/lessons/${lesson.id}/files/${fileId}`, {
+      onError: (errors) => {
+        console.error('File deletion failed:', errors);
+      }
+    });
   };
 
   const getFileIcon = (fileType: string) => {
@@ -66,15 +70,15 @@ export default function LessonFilesIndex({ course, lesson, files }: LessonFilesI
     },
     {
       title: course.title,
-      href: route('courses.show', course.id),
+      href: `/courses/${course.id}`,
     },
     {
       title: lesson.title,
-      href: route('courses.lessons.show', [course.id, lesson.id]),
+      href: `/lessons/${lesson.id}`,
     },
     {
       title: 'ไฟล์',
-      href: route('courses.lessons.files.index', [course.id, lesson.id]),
+      href: `/lessons/${lesson.id}/files`,
     },
   ];
 
@@ -87,7 +91,7 @@ export default function LessonFilesIndex({ course, lesson, files }: LessonFilesI
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
-              <Link href={route('courses.lessons.show', [course.id, lesson.id])}>
+              <Link href={`/lessons/${lesson.id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 กลับไปบทเรียน
               </Link>
@@ -99,7 +103,7 @@ export default function LessonFilesIndex({ course, lesson, files }: LessonFilesI
               </p>
             </div>
           </div>
-          <Link href={route('courses.lessons.files.create', [course.id, lesson.id])}>
+          <Link href={`/lessons/${lesson.id}/files/create`}>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               อัปโหลดไฟล์
@@ -135,7 +139,7 @@ export default function LessonFilesIndex({ course, lesson, files }: LessonFilesI
                   
                   <div className="flex items-center justify-between pt-3">
                     <div className="flex items-center gap-2">
-                      <Link href={route('courses.lessons.files.download', [course.id, lesson.id, file.id])}>
+                      <Link href={`/lessons/${lesson.id}/files/${file.id}/download`}>
                         <Button variant="outline" size="sm">
                           <Download className="w-4 h-4 mr-1" />
                           ดาวน์โหลด
@@ -144,7 +148,7 @@ export default function LessonFilesIndex({ course, lesson, files }: LessonFilesI
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Link href={route('courses.lessons.files.edit', [course.id, lesson.id, file.id])}>
+                      <Link href={`/lessons/${lesson.id}/files/${file.id}/edit`}>
                         <Button variant="outline" size="sm">
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -189,7 +193,7 @@ export default function LessonFilesIndex({ course, lesson, files }: LessonFilesI
             <p className="text-muted-foreground mb-4">
               อัปโหลดไฟล์แรกของคุณเพื่อเพิ่มเนื้อหาให้บทเรียน
             </p>
-            <Link href={route('courses.lessons.files.create', [course.id, lesson.id])}>
+            <Link href={`/lessons/${lesson.id}/files/create`}>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
                 อัปโหลดไฟล์แรก

@@ -1,6 +1,5 @@
-import { Form, Head, router } from '@inertiajs/react';
-import { ArrowLeft, Save, Upload, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Head, useForm } from '@inertiajs/react';
+import { ArrowLeft, Save, Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 
@@ -28,300 +27,253 @@ interface Course {
     title: string;
 }
 
-interface LessonFile {
-    file: File;
-    title: string;
-    description: string;
-}
-
 interface LessonCreateProps {
     course: Course;
 }
 
 export default function LessonCreate({ course }: LessonCreateProps) {
-    const [contentType, setContentType] = useState<'text' | 'rich_text' | 'video' | 'file'>('text');
-    const [files, setFiles] = useState<LessonFile[]>([]);
-    const [youtubeUrl, setYoutubeUrl] = useState('');
+    const form = useForm({ 
+        title: '', 
+        content: '',
+        content_type: 'text',
+        order: 1,
+        status: 'draft',
+        youtube_url: ''
+    });
 
-    const addFile = () => {
-        setFiles([
-            ...files,
-            {
-                file: new File([], ''),
-                title: '',
-                description: '',
-            },
-        ]);
-    };
-
-    const removeFile = (index: number) => {
-        setFiles(files.filter((_, i) => i !== index));
-    };
-
-    const updateFile = (index: number, field: keyof LessonFile, value: any) => {
-        const newFiles = [...files];
-        (newFiles[index] as any)[field] = value;
-        setFiles(newFiles);
-    };
-
-    const handleFileChange = (index: number, file: File) => {
-        updateFile(index, 'file', file);
-        if (!files[index].title) {
-            updateFile(index, 'title', file.name);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        const formData = new FormData();
-        formData.append('title', (document.getElementById('title') as HTMLInputElement).value);
-        formData.append('content', (document.getElementById('content') as HTMLTextAreaElement).value);
-        formData.append('content_type', contentType);
-        formData.append('order', (document.getElementById('order') as HTMLInputElement).value);
-        formData.append('status', (document.getElementById('status') as HTMLSelectElement).value);
-        
-        if (youtubeUrl) {
-            formData.append('youtube_url', youtubeUrl);
-        }
-
-        // Add files
-        files.forEach((fileData, index) => {
-            if (fileData.file.size > 0) {
-                formData.append(`files[]`, fileData.file);
-                formData.append(`file_titles[]`, fileData.title);
-                formData.append(`file_descriptions[]`, fileData.description);
+        form.post(`/courses/${course.id}/lessons`, { 
+            preserveScroll: true,
+            onError: (errors) => {
+                console.error('Lesson creation failed:', errors);
             }
         });
-
-        router.post(route('courses.lessons.store', course.id), formData);
     };
 
-    const validateYouTubeUrl = (url: string) => {
-        const youtubeRegex = /^https:\/\/(www\.)?youtube\.com\/watch\?v=[a-zA-Z0-9_-]+$|^https:\/\/youtu\.be\/[a-zA-Z0-9_-]+$/;
-        return youtubeRegex.test(url);
+    const handleContentChange = (content: string) => {
+        form.setData('content', content);
+    };
+
+    const extractYouTubeVideoId = (url: string) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        if (match && match[2].length === 11) {
+            return match[2];
+        }
+        return null;
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`สร้างบทเรียน - ${course.title}`} />
             
-            <div className="flex h-full flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+            <div className="container mx-auto py-6">
+                <div className="max-w-4xl mx-auto">
+                    {/* Header */}
+                    <div className="flex items-center gap-4 mb-6">
                         <Button variant="ghost" size="sm" asChild>
-                            <a href={route('courses.show', course.id)}>
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                กลับไปหลักสูตร
+                            <a href={`/courses/${course.id}`}>
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                กลับ
                             </a>
                         </Button>
                         <div>
                             <h1 className="text-3xl font-bold">สร้างบทเรียน</h1>
                             <p className="text-muted-foreground">
-                                หลักสูตร: {course.title}
+                                สร้างบทเรียนใหม่ในหลักสูตร {course.title}
                             </p>
                         </div>
                     </div>
-                </div>
 
-                <Form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Lesson Details */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>รายละเอียดบทเรียน</CardTitle>
-                            <CardDescription>
-                                กำหนดชื่อ คำอธิบาย และการตั้งค่าพื้นฐานของบทเรียน
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                    <form onSubmit={submit} className="space-y-6">
+                        {/* Lesson Details */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>ข้อมูลบทเรียน</CardTitle>
+                                <CardDescription>
+                                    กำหนดชื่อ คำอธิบาย และการตั้งค่าพื้นฐานของบทเรียน
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
                                     <Label htmlFor="title">ชื่อบทเรียน *</Label>
                                     <Input
                                         id="title"
                                         name="title"
+                                        value={form.data.title}
+                                        onChange={(e) => form.setData('title', e.target.value)}
                                         placeholder="ชื่อบทเรียน"
+                                        className="mt-1"
                                         required
                                     />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="order">ลำดับ *</Label>
-                                    <Input
-                                        id="order"
-                                        name="order"
-                                        type="number"
-                                        min="0"
-                                        placeholder="ลำดับในหลักสูตร"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="content">เนื้อหาบทเรียน *</Label>
-                                <Textarea
-                                    id="content"
-                                    name="content"
-                                    placeholder="เนื้อหาบทเรียน"
-                                    rows={8}
-                                    required
-                                />
-                            </div>
-
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="content_type">ประเภทเนื้อหา *</Label>
-                                    <Select value={contentType} onValueChange={(value: any) => setContentType(value)}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="text">ข้อความธรรมดา</SelectItem>
-                                            <SelectItem value="rich_text">ข้อความแบบ Rich Text</SelectItem>
-                                            <SelectItem value="video">วิดีโอ</SelectItem>
-                                            <SelectItem value="file">ไฟล์</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    {form.errors.title && (
+                                        <p className="text-sm text-red-600 mt-1">{form.errors.title}</p>
+                                    )}
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="status">สถานะ *</Label>
-                                    <Select name="status" defaultValue="draft">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="draft">ร่าง</SelectItem>
-                                            <SelectItem value="published">เผยแพร่</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <Label htmlFor="content_type">ประเภทเนื้อหา</Label>
+                                        <Select
+                                            value={form.data.content_type}
+                                            onValueChange={(value) => form.setData('content_type', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="เลือกประเภทเนื้อหา" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="text">ข้อความธรรมดา</SelectItem>
+                                                <SelectItem value="rich_text">Rich Text</SelectItem>
+                                                <SelectItem value="video">วิดีโอ</SelectItem>
+                                                <SelectItem value="file">ไฟล์</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {form.errors.content_type && (
+                                            <p className="text-sm text-red-600 mt-1">{form.errors.content_type}</p>
+                                        )}
+                                    </div>
 
-                    {/* YouTube Video */}
-                    {contentType === 'video' && (
+                                    <div>
+                                        <Label htmlFor="order">ลำดับ</Label>
+                                        <Input
+                                            id="order"
+                                            name="order"
+                                            type="number"
+                                            min="1"
+                                            value={form.data.order}
+                                            onChange={(e) => form.setData('order', Number(e.target.value))}
+                                            placeholder="ลำดับในหลักสูตร"
+                                            className="mt-1"
+                                            required
+                                        />
+                                        {form.errors.order && (
+                                            <p className="text-sm text-red-600 mt-1">{form.errors.order}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="status">สถานะ</Label>
+                                        <Select
+                                            value={form.data.status}
+                                            onValueChange={(value) => form.setData('status', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="เลือกสถานะ" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="draft">ร่าง</SelectItem>
+                                                <SelectItem value="published">เผยแพร่</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {form.errors.status && (
+                                            <p className="text-sm text-red-600 mt-1">{form.errors.status}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Lesson Content */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>วิดีโอ YouTube</CardTitle>
+                                <CardTitle>เนื้อหาบทเรียน</CardTitle>
                                 <CardDescription>
-                                    เพิ่มลิงก์วิดีโอ YouTube สำหรับบทเรียน
+                                    {form.data.content_type === 'rich_text' 
+                                        ? 'ใช้ Rich Text Editor สำหรับเนื้อหาที่มีรูปแบบซับซ้อน'
+                                        : 'เนื้อหาบทเรียน'
+                                    }
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="youtube_url">ลิงก์ YouTube</Label>
-                                    <Input
-                                        id="youtube_url"
-                                        placeholder="https://www.youtube.com/watch?v=..."
-                                        value={youtubeUrl}
-                                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                                {form.data.content_type === 'rich_text' ? (
+                                    <RichTextEditor
+                                        value={form.data.content}
+                                        onChange={handleContentChange}
+                                        placeholder="เริ่มเขียนเนื้อหาบทเรียนของคุณ..."
                                     />
-                                    {youtubeUrl && !validateYouTubeUrl(youtubeUrl) && (
-                                        <p className="text-sm text-red-600">
-                                            กรุณาใส่ลิงก์ YouTube ที่ถูกต้อง
-                                        </p>
+                                ) : (
+                                    <div>
+                                        <Label htmlFor="content">เนื้อหา *</Label>
+                                        <Textarea
+                                            id="content"
+                                            name="content"
+                                            value={form.data.content}
+                                            onChange={(e) => form.setData('content', e.target.value)}
+                                            placeholder="เนื้อหาบทเรียน"
+                                            className="mt-1 min-h-[300px]"
+                                            rows={12}
+                                            required
+                                        />
+                                    </div>
+                                )}
+                                {form.errors.content && (
+                                    <p className="text-sm text-red-600 mt-1">{form.errors.content}</p>
+                                )}
+
+                                {/* YouTube URL Input */}
+                                <div>
+                                    <Label htmlFor="youtube_url">ลิงก์ YouTube (ไม่บังคับ)</Label>
+                                    <div className="mt-1 flex items-center space-x-2">
+                                        <Input
+                                            id="youtube_url"
+                                            type="url"
+                                            value={form.data.youtube_url}
+                                            onChange={(e) => form.setData('youtube_url', e.target.value)}
+                                            placeholder="https://www.youtube.com/watch?v=..."
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const url = form.data.youtube_url;
+                                                if (url) {
+                                                    const videoId = extractYouTubeVideoId(url);
+                                                    if (videoId) {
+                                                        form.setData('youtube_url', `https://www.youtube.com/watch?v=${videoId}`);
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            ตรวจสอบ
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        ใส่ลิงก์ YouTube เพื่อแสดงวิดีโอในบทเรียน
+                                    </p>
+                                    {form.data.youtube_url && (
+                                        <div className="mt-2">
+                                            <Label className="text-sm font-medium">ตัวอย่างวิดีโอ:</Label>
+                                            <div className="mt-1 aspect-video w-full max-w-md">
+                                                <iframe
+                                                    src={`https://www.youtube.com/embed/${extractYouTubeVideoId(form.data.youtube_url)}`}
+                                                    title="YouTube video"
+                                                    className="w-full h-full rounded border"
+                                                    allowFullScreen
+                                                />
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
 
-                    {/* Files */}
-                    {contentType === 'file' && (
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle>ไฟล์ในบทเรียน</CardTitle>
-                                        <CardDescription>
-                                            อัปโหลดไฟล์ที่เกี่ยวข้องกับบทเรียน
-                                        </CardDescription>
-                                    </div>
-                                    <Button type="button" onClick={addFile} size="sm">
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        เพิ่มไฟล์
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {files.length === 0 ? (
-                                    <div className="text-center py-8 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                                        <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                        <p className="text-muted-foreground">
-                                            คลิกปุ่ม "เพิ่มไฟล์" เพื่ออัปโหลดไฟล์
-                                        </p>
-                                    </div>
-                                ) : (
-                                    files.map((fileData, index) => (
-                                        <div key={index} className="border rounded-lg p-4 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-medium">ไฟล์ที่ {index + 1}</h4>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => removeFile(index)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <Label>ไฟล์ *</Label>
-                                                    <Input
-                                                        type="file"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                handleFileChange(index, file);
-                                                            }
-                                                        }}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>ชื่อไฟล์</Label>
-                                                    <Input
-                                                        placeholder="ชื่อไฟล์"
-                                                        value={fileData.title}
-                                                        onChange={(e) => updateFile(index, 'title', e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label>คำอธิบาย</Label>
-                                                <Textarea
-                                                    placeholder="คำอธิบายไฟล์ (ไม่บังคับ)"
-                                                    value={fileData.description}
-                                                    onChange={(e) => updateFile(index, 'description', e.target.value)}
-                                                    rows={2}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Submit */}
-                    <div className="flex justify-end gap-3">
-                        <Button variant="outline" asChild>
-                            <a href={route('courses.show', course.id)}>
-                                ยกเลิก
-                            </a>
-                        </Button>
-                        <Button type="submit">
-                            <Save className="mr-2 h-4 w-4" />
-                            สร้างบทเรียน
-                        </Button>
-                    </div>
-                </Form>
+                        {/* Submit */}
+                        <div className="flex justify-end gap-4 pt-6">
+                            <Button variant="outline" asChild>
+                                <a href={`/courses/${course.id}`}>
+                                    ยกเลิก
+                                </a>
+                            </Button>
+                            <Button type="submit" disabled={form.processing}>
+                                <Save className="mr-2 h-4 w-4" />
+                                {form.processing ? 'กำลังบันทึก...' : 'สร้างบทเรียน'}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </AppLayout>
     );

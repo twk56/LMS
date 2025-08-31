@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { ArrowLeft, LoaderCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,22 @@ interface EditCourseProps {
 }
 
 export default function EditCourse({ course }: EditCourseProps) {
+    const { data, setData, patch, processing, errors } = useForm({
+        title: course.title,
+        description: course.description || '',
+        image: course.image || '',
+        status: course.status,
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        patch(`/courses/${course.id}`, {
+            onError: (errors) => {
+                console.error('Course update failed:', errors);
+            }
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`แก้ไขหลักสูตร - ${course.title}`} />
@@ -41,7 +57,7 @@ export default function EditCourse({ course }: EditCourseProps) {
                 {/* Header */}
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="sm" asChild>
-                        <a href={route('courses.show', course.id)}>
+                        <a href={`/courses/${course.id}`}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             กลับ
                         </a>
@@ -56,19 +72,14 @@ export default function EditCourse({ course }: EditCourseProps) {
 
                 {/* Form */}
                 <div className="max-w-2xl">
-                    <Form
-                        method="patch"
-                        action={route('courses.update', course.id)}
-                        className="space-y-6"
-                    >
-                        {({ processing, errors }) => (
+                    <form onSubmit={handleSubmit} className="space-y-6">
                             <>
                                 <div className="space-y-2">
                                     <Label htmlFor="title">ชื่อหลักสูตร *</Label>
                                     <Input
                                         id="title"
-                                        name="title"
-                                        defaultValue={course.title}
+                                        value={data.title}
+                                        onChange={(e) => setData('title', e.target.value)}
                                         placeholder="ชื่อหลักสูตรของคุณ"
                                         required
                                     />
@@ -81,8 +92,8 @@ export default function EditCourse({ course }: EditCourseProps) {
                                     <Label htmlFor="description">คำอธิบาย</Label>
                                     <Textarea
                                         id="description"
-                                        name="description"
-                                        defaultValue={course.description || ''}
+                                        value={data.description}
+                                        onChange={(e) => setData('description', e.target.value)}
                                         placeholder="อธิบายเกี่ยวกับหลักสูตรนี้..."
                                         rows={4}
                                     />
@@ -95,9 +106,9 @@ export default function EditCourse({ course }: EditCourseProps) {
                                     <Label htmlFor="image">รูปภาพ (URL)</Label>
                                     <Input
                                         id="image"
-                                        name="image"
+                                        value={data.image}
+                                        onChange={(e) => setData('image', e.target.value)}
                                         type="url"
-                                        defaultValue={course.image || ''}
                                         placeholder="https://example.com/image.jpg"
                                     />
                                     {errors.image && (
@@ -107,7 +118,7 @@ export default function EditCourse({ course }: EditCourseProps) {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="status">สถานะ *</Label>
-                                    <Select name="status" defaultValue={course.status}>
+                                    <Select value={data.status} onValueChange={(value: 'draft' | 'published') => setData('status', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="เลือกสถานะ" />
                                         </SelectTrigger>
@@ -127,12 +138,11 @@ export default function EditCourse({ course }: EditCourseProps) {
                                         บันทึกการเปลี่ยนแปลง
                                     </Button>
                                     <Button type="button" variant="outline" asChild>
-                                        <a href={route('courses.show', course.id)}>ยกเลิก</a>
+                                        <a href={`/courses/${course.id}`}>ยกเลิก</a>
                                     </Button>
                                 </div>
                             </>
-                        )}
-                    </Form>
+                    </form>
                 </div>
             </div>
         </AppLayout>

@@ -1,10 +1,12 @@
-import { Form, Head } from '@inertiajs/react';
-import { ArrowLeft, LoaderCircle } from 'lucide-react';
+import { Head, useForm } from '@inertiajs/react';
+import { ArrowLeft, Save } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 
@@ -23,88 +25,175 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function CreateCourse() {
+interface CourseCategory {
+    id: number;
+    name: string;
+}
+
+interface PageProps {
+    categories: CourseCategory[];
+}
+
+export default function CreateCourse({ categories = [] }: PageProps) {
+    const form = useForm({
+        title: '',
+        description: '',
+        image: '',
+        category_id: '',
+        status: 'draft',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        form.post('/courses', { 
+            preserveScroll: true,
+            onError: (errors) => {
+                console.error('Course creation failed:', errors);
+            }
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="สร้างหลักสูตรใหม่" />
             
-            <div className="flex h-full flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" asChild>
-                        <a href={route('courses.index')}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            กลับ
-                        </a>
-                    </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold">สร้างหลักสูตรใหม่</h1>
-                        <p className="text-muted-foreground">
-                            สร้างหลักสูตรใหม่เพื่อแบ่งปันความรู้ของคุณ
-                        </p>
+            <div className="container mx-auto py-6">
+                <div className="max-w-4xl mx-auto">
+                    {/* Header */}
+                    <div className="flex items-center gap-4 mb-6">
+                        <Button variant="ghost" size="sm" asChild>
+                            <a href="/courses">
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                กลับ
+                            </a>
+                        </Button>
+                        <div>
+                            <h1 className="text-3xl font-bold">สร้างหลักสูตรใหม่</h1>
+                            <p className="text-muted-foreground">
+                                สร้างหลักสูตรใหม่เพื่อแบ่งปันความรู้ของคุณ
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                {/* Form */}
-                <div className="max-w-2xl">
-                    <Form
-                        method="post"
-                        action={route('courses.store')}
-                        className="space-y-6"
-                    >
-                        {({ processing, errors }) => (
-                            <>
-                                <div className="space-y-2">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Course Details */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>ข้อมูลหลักสูตร</CardTitle>
+                                <CardDescription>
+                                    กำหนดชื่อ คำอธิบาย และการตั้งค่าพื้นฐานของหลักสูตร
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
                                     <Label htmlFor="title">ชื่อหลักสูตร *</Label>
                                     <Input
                                         id="title"
                                         name="title"
+                                        value={form.data.title}
+                                        onChange={(e) => form.setData('title', e.target.value)}
                                         placeholder="ชื่อหลักสูตรของคุณ"
+                                        className="mt-1"
                                         required
                                     />
-                                    {errors.title && (
-                                        <p className="text-sm text-red-600">{errors.title}</p>
+                                    {form.errors.title && (
+                                        <p className="text-sm text-red-600 mt-1">{form.errors.title}</p>
                                     )}
                                 </div>
 
-                                <div className="space-y-2">
+                                <div>
                                     <Label htmlFor="description">คำอธิบาย</Label>
                                     <Textarea
                                         id="description"
                                         name="description"
-                                        placeholder="อธิบายเกี่ยวกับหลักสูตรนี้..."
+                                        value={form.data.description}
+                                        onChange={(e) => form.setData('description', e.target.value)}
+                                        placeholder="อธิบายเกี่ยวกับหลักสูตรนี้"
+                                        className="mt-1"
                                         rows={4}
                                     />
-                                    {errors.description && (
-                                        <p className="text-sm text-red-600">{errors.description}</p>
+                                    {form.errors.description && (
+                                        <p className="text-sm text-red-600 mt-1">{form.errors.description}</p>
                                     )}
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="image">รูปภาพ (URL)</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="category_id">หมวดหมู่</Label>
+                                        <Select
+                                            value={form.data.category_id}
+                                            onValueChange={(value) => form.setData('category_id', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="เลือกหมวดหมู่" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {categories.map((category) => (
+                                                    <SelectItem key={category.id} value={category.id.toString()}>
+                                                        {category.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {form.errors.category_id && (
+                                            <p className="text-sm text-red-600 mt-1">{form.errors.category_id}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="status">สถานะ</Label>
+                                        <Select
+                                            value={form.data.status}
+                                            onValueChange={(value) => form.setData('status', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="เลือกสถานะ" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="draft">ร่าง</SelectItem>
+                                                <SelectItem value="published">เผยแพร่</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {form.errors.status && (
+                                            <p className="text-sm text-red-600 mt-1">{form.errors.status}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="image">รูปภาพหลักสูตร (ไม่บังคับ)</Label>
                                     <Input
                                         id="image"
                                         name="image"
                                         type="url"
+                                        value={form.data.image}
+                                        onChange={(e) => form.setData('image', e.target.value)}
                                         placeholder="https://example.com/image.jpg"
+                                        className="mt-1"
                                     />
-                                    {errors.image && (
-                                        <p className="text-sm text-red-600">{errors.image}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        ใส่ URL ของรูปภาพที่จะใช้เป็นภาพหน้าปกหลักสูตร
+                                    </p>
+                                    {form.errors.image && (
+                                        <p className="text-sm text-red-600 mt-1">{form.errors.image}</p>
                                     )}
                                 </div>
+                            </CardContent>
+                        </Card>
 
-                                <div className="flex gap-4">
-                                    <Button type="submit" disabled={processing}>
-                                        {processing && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                        สร้างหลักสูตร
-                                    </Button>
-                                    <Button type="button" variant="outline" asChild>
-                                        <a href={route('courses.index')}>ยกเลิก</a>
-                                    </Button>
-                                </div>
-                            </>
-                        )}
-                    </Form>
+                        {/* Submit */}
+                        <div className="flex justify-end gap-4 pt-6">
+                            <Button variant="outline" asChild>
+                                <a href="/courses">
+                                    ยกเลิก
+                                </a>
+                            </Button>
+                            <Button type="submit" disabled={form.processing}>
+                                <Save className="mr-2 h-4 w-4" />
+                                {form.processing ? 'กำลังบันทึก...' : 'สร้างหลักสูตร'}
+                            </Button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </AppLayout>

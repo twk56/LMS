@@ -1,5 +1,5 @@
 // Components
-import { Form, Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 
 import TextLink from '@/components/text-link';
@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function VerifyEmail({ status }: { status?: string }) {
+    const { post, processing } = useForm();
+
+    const handleResend = () => {
+        post(route('verification.send'));
+    };
+
     return (
         <AuthLayout title="Verify email" description="Please verify your email address by clicking on the link we just emailed to you.">
             <Head title="Email verification" />
@@ -17,10 +23,9 @@ export default function VerifyEmail({ status }: { status?: string }) {
                 </div>
             )}
 
-            <Form method="post" action={route('verification.send')} className="space-y-6 text-center">
-                {({ processing }) => (
+            <div className="space-y-6 text-center">
                     <>
-                        <Button disabled={processing} variant="secondary">
+                        <Button onClick={handleResend} disabled={processing} variant="secondary">
                             {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                             Resend verification email
                         </Button>
@@ -29,8 +34,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                             Log out
                         </TextLink>
                     </>
-                )}
-            </Form>
+            </div>
         </AuthLayout>
     );
 }

@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 
 import InputError from '@/components/input-error';
@@ -9,17 +9,27 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function Register() {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        post('/register', {
+            onSuccess: () => reset('password', 'password_confirmation'),
+            onError: (errors) => {
+                console.error('Registration failed:', errors);
+            }
+        });
+    };
+
     return (
         <AuthLayout title="Create an account" description="Enter your details below to create your account">
             <Head title="Register" />
-            <Form
-                method="post"
-                action={route('register')}
-                onSubmitComplete={(form) => form.reset('password', 'password_confirmation')}
-                disableWhileProcessing
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
@@ -27,11 +37,12 @@ export default function Register() {
                                 <Input
                                     id="name"
                                     type="text"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
                                     required
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="name"
-                                    name="name"
                                     placeholder="Full name"
                                 />
                                 <InputError message={errors.name} className="mt-2" />
@@ -42,10 +53,11 @@ export default function Register() {
                                 <Input
                                     id="email"
                                     type="email"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
                                     required
                                     tabIndex={2}
                                     autoComplete="email"
-                                    name="email"
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
@@ -56,10 +68,11 @@ export default function Register() {
                                 <Input
                                     id="password"
                                     type="password"
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
                                     required
                                     tabIndex={3}
                                     autoComplete="new-password"
-                                    name="password"
                                     placeholder="Password"
                                 />
                                 <InputError message={errors.password} />
@@ -70,10 +83,11 @@ export default function Register() {
                                 <Input
                                     id="password_confirmation"
                                     type="password"
+                                    value={data.password_confirmation}
+                                    onChange={(e) => setData('password_confirmation', e.target.value)}
                                     required
                                     tabIndex={4}
                                     autoComplete="new-password"
-                                    name="password_confirmation"
                                     placeholder="Confirm password"
                                 />
                                 <InputError message={errors.password_confirmation} />
@@ -87,13 +101,12 @@ export default function Register() {
 
                         <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
-                            <TextLink href={route('login')} tabIndex={6}>
+                            <TextLink href="/login" tabIndex={6}>
                                 Log in
                             </TextLink>
                         </div>
                     </>
-                )}
-            </Form>
+            </form>
         </AuthLayout>
     );
 }

@@ -3,10 +3,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
-import { Form, Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 
 export default function ConfirmPassword() {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        password: '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        post(route('password.confirm'), {
+            onSuccess: () => reset('password'),
+        });
+    };
+
     return (
         <AuthLayout
             title="Confirm your password"
@@ -14,12 +25,19 @@ export default function ConfirmPassword() {
         >
             <Head title="Confirm password" />
 
-            <Form method="post" action={route('password.confirm')} onSubmitComplete={(form) => form.reset('password')}>
-                {({ processing, errors }) => (
+            <form onSubmit={handleSubmit}>
                     <div className="space-y-6">
                         <div className="grid gap-2">
                             <Label htmlFor="password">Password</Label>
-                            <Input id="password" type="password" name="password" placeholder="Password" autoComplete="current-password" autoFocus />
+                            <Input 
+                                id="password" 
+                                type="password" 
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                placeholder="Password" 
+                                autoComplete="current-password" 
+                                autoFocus 
+                            />
 
                             <InputError message={errors.password} />
                         </div>
@@ -31,8 +49,7 @@ export default function ConfirmPassword() {
                             </Button>
                         </div>
                     </div>
-                )}
-            </Form>
+            </form>
         </AuthLayout>
     );
 }

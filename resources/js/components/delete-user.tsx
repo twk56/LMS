@@ -4,11 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Form } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
 
 export default function DeleteUser() {
     const passwordInput = useRef<HTMLInputElement>(null);
+    const { data, setData, delete: destroy, processing, errors, reset } = useForm({
+        password: '',
+    });
 
     return (
         <div className="space-y-6">
@@ -30,17 +33,22 @@ export default function DeleteUser() {
                             to confirm you would like to permanently delete your account.
                         </DialogDescription>
 
-                        <Form
-                            method="delete"
-                            action={route('profile.destroy')}
-                            options={{
-                                preserveScroll: true,
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                destroy('/profile', {
+                                    onError: (errors) => {
+                                        console.error('Account deletion failed:', errors);
+                                        passwordInput.current?.focus();
+                                    },
+                                    onSuccess: () => {
+                                        console.log('Account deleted successfully');
+                                        reset();
+                                    },
+                                });
                             }}
-                            onError={() => passwordInput.current?.focus()}
-                            onSubmitComplete={(form) => form.reset()}
                             className="space-y-6"
                         >
-                            {({ resetAndClearErrors, processing, errors }) => (
                                 <>
                                     <div className="grid gap-2">
                                         <Label htmlFor="password" className="sr-only">
@@ -50,7 +58,8 @@ export default function DeleteUser() {
                                         <Input
                                             id="password"
                                             type="password"
-                                            name="password"
+                                            value={data.password}
+                                            onChange={(e) => setData('password', e.target.value)}
                                             ref={passwordInput}
                                             placeholder="Password"
                                             autoComplete="current-password"
@@ -61,18 +70,17 @@ export default function DeleteUser() {
 
                                     <DialogFooter className="gap-2">
                                         <DialogClose asChild>
-                                            <Button variant="secondary" onClick={() => resetAndClearErrors()}>
+                                            <Button variant="secondary" onClick={() => reset()}>
                                                 Cancel
                                             </Button>
                                         </DialogClose>
 
-                                        <Button variant="destructive" disabled={processing} asChild>
-                                            <button type="submit">Delete account</button>
+                                        <Button variant="destructive" disabled={processing} type="submit">
+                                            Delete account
                                         </Button>
                                     </DialogFooter>
                                 </>
-                            )}
-                        </Form>
+                        </form>
                     </DialogContent>
                 </Dialog>
             </div>

@@ -1,161 +1,311 @@
-import React from 'react';
-import { Editor } from '@tinymce/tinymce-react';
+import { forwardRef, useImperativeHandle, useRef, useState, useCallback, useEffect } from 'react';
+import { Button } from './button';
+import { cn } from '@/lib/utils';
+import { Bold, Italic, Underline, List, ListOrdered, Type, Undo, Redo } from 'lucide-react';
 
 interface RichTextEditorProps {
-  value: string;
-  onChange: (content: string) => void;
-  placeholder?: string;
-  height?: number;
-  disabled?: boolean;
+    value?: string;
+    onChange?: (value: string) => void;
+    placeholder?: string;
+    className?: string;
+    disabled?: boolean;
+    minHeight?: string;
 }
 
-export function RichTextEditor({ 
-  value, 
-  onChange, 
-  placeholder = 'เริ่มพิมพ์เนื้อหาของคุณ...',
-  height = 400,
-  disabled = false 
-}: RichTextEditorProps) {
-  const handleEditorChange = (content: string) => {
-    onChange(content);
-  };
+export interface RichTextEditorRef {
+    getValue: () => string;
+    setValue: (value: string) => void;
+    focus: () => void;
+    clear: () => void;
+}
 
-  return (
-    <div className="rich-text-editor">
-      <Editor
-        apiKey="your-tinymce-api-key" // ใช้ free version หรือใส่ API key ของคุณ
-        value={value}
-        onEditorChange={handleEditorChange}
-        init={{
-          height: height,
-          menubar: false,
-          plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-          ],
-          toolbar: 'undo redo | blocks | ' +
-            'bold italic forecolor | alignleft aligncenter ' +
-            'alignright alignjustify | bullist numlist outdent indent | ' +
-            'removeformat | link image | help',
-          content_style: `
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-              font-size: 14px; 
-              line-height: 1.6; 
-              color: #374151; 
-              margin: 0; 
-              padding: 16px; 
+// Simple HTML sanitizer
+const sanitizeHtml = (html: string): string => {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    
+    // Allow only safe tags
+    const allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+    const allowedAttributes = ['class', 'style'];
+    
+    const sanitizeNode = (node: Node): Node | null => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.cloneNode();
+        }
+        
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as Element;
+            const tagName = element.tagName.toLowerCase();
+            
+            if (!allowedTags.includes(tagName)) {
+                return document.createTextNode(element.textContent || '');
             }
-            h1, h2, h3, h4, h5, h6 { 
-              margin-top: 24px; 
-              margin-bottom: 16px; 
-              font-weight: 600; 
-              line-height: 1.25; 
-            }
-            h1 { font-size: 2em; }
-            h2 { font-size: 1.5em; }
-            h3 { font-size: 1.25em; }
-            h4 { font-size: 1em; }
-            h5 { font-size: 0.875em; }
-            h6 { font-size: 0.85em; }
-            p { margin: 0 0 16px 0; }
-            ul, ol { margin: 0 0 16px 0; padding-left: 24px; }
-            li { margin: 0 0 8px 0; }
-            blockquote { 
-              margin: 0 0 16px 0; 
-              padding: 0 16px; 
-              color: #6b7280; 
-              border-left: 4px solid #e5e7eb; 
-            }
-            code { 
-              background-color: #f3f4f6; 
-              padding: 2px 4px; 
-              border-radius: 4px; 
-              font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; 
-              font-size: 0.875em; 
-            }
-            pre { 
-              background-color: #f3f4f6; 
-              padding: 16px; 
-              border-radius: 8px; 
-              overflow-x: auto; 
-              margin: 0 0 16px 0; 
-            }
-            pre code { 
-              background-color: transparent; 
-              padding: 0; 
-            }
-            img { 
-              max-width: 100%; 
-              height: auto; 
-              border-radius: 8px; 
-              margin: 16px 0; 
-            }
-            a { 
-              color: #3b82f6; 
-              text-decoration: underline; 
-            }
-            a:hover { 
-              color: #2563eb; 
-            }
-            table { 
-              border-collapse: collapse; 
-              width: 100%; 
-              margin: 16px 0; 
-            }
-            th, td { 
-              border: 1px solid #e5e7eb; 
-              padding: 8px 12px; 
-              text-align: left; 
-            }
-            th { 
-              background-color: #f9fafb; 
-              font-weight: 600; 
-            }
-          `,
-          placeholder: placeholder,
-          branding: false,
-          elementpath: false,
-          resize: false,
-          statusbar: false,
-          paste_data_images: true,
-          images_upload_url: '/api/upload-image', // จะสร้าง API endpoint สำหรับอัปโหลดรูปภาพ
-          images_upload_handler: (blobInfo: any, progress: any) => {
-            return new Promise((resolve, reject) => {
-              const formData = new FormData();
-              formData.append('image', blobInfo.blob(), blobInfo.filename());
-              
-              fetch('/api/upload-image', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-              })
-              .then(response => response.json())
-              .then(result => {
-                if (result.location) {
-                  resolve(result.location);
-                } else {
-                  reject('Upload failed');
+            
+            const newElement = document.createElement(tagName);
+            
+            // Copy allowed attributes
+            for (const attr of allowedAttributes) {
+                if (element.hasAttribute(attr)) {
+                    newElement.setAttribute(attr, element.getAttribute(attr) || '');
                 }
-              })
-              .catch(error => {
-                reject(error);
-              });
-            });
-          },
-          setup: (editor) => {
-            editor.on('init', () => {
-              if (disabled) {
-                editor.setMode('readonly');
-              }
-            });
-          },
-        }}
-        disabled={disabled}
-      />
-    </div>
-  );
-} 
+            }
+            
+            // Recursively sanitize child nodes
+            for (const child of Array.from(element.childNodes)) {
+                const sanitizedChild = sanitizeNode(child);
+                if (sanitizedChild) {
+                    newElement.appendChild(sanitizedChild);
+                }
+            }
+            
+            return newElement;
+        }
+        
+        return null;
+    };
+    
+    const sanitized = sanitizeNode(div);
+    return sanitized ? sanitized.textContent || '' : '';
+};
+
+export const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
+    ({ value = '', onChange, placeholder, className, disabled, minHeight = '200px' }, ref) => {
+        const editorRef = useRef<HTMLDivElement>(null);
+        const [isFocused, setIsFocused] = useState(false);
+        const [canUndo, setCanUndo] = useState(false);
+        const [canRedo, setCanRedo] = useState(false);
+        const [isBold, setIsBold] = useState(false);
+        const [isItalic, setIsItalic] = useState(false);
+        const [isUnderline, setIsUnderline] = useState(false);
+        const timeoutRef = useRef<NodeJS.Timeout>();
+
+        useImperativeHandle(ref, () => ({
+            getValue: () => {
+                const content = editorRef.current?.innerHTML || '';
+                return sanitizeHtml(content);
+            },
+            setValue: (newValue: string) => {
+                if (editorRef.current) {
+                    const sanitized = sanitizeHtml(newValue);
+                    editorRef.current.innerHTML = sanitized;
+                }
+            },
+            focus: () => editorRef.current?.focus(),
+            clear: () => {
+                if (editorRef.current) {
+                    editorRef.current.innerHTML = '';
+                }
+            },
+        }));
+
+        // Debounced onChange handler
+        const debouncedOnChange = useCallback((content: string) => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+            timeoutRef.current = setTimeout(() => {
+                onChange?.(content);
+            }, 300);
+        }, [onChange]);
+
+        const handleInput = useCallback(() => {
+            const content = editorRef.current?.innerHTML || '';
+            debouncedOnChange(content);
+            updateToolbarState();
+        }, [debouncedOnChange]);
+
+        const updateToolbarState = useCallback(() => {
+            if (!editorRef.current) return;
+            
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const parentElement = range.commonAncestorContainer.parentElement;
+                
+                setIsBold(!!parentElement?.closest('strong, b'));
+                setIsItalic(!!parentElement?.closest('em, i'));
+                setIsUnderline(!!parentElement?.closest('u'));
+            }
+        }, []);
+
+        const insertText = useCallback((text: string) => {
+            if (editorRef.current && !disabled) {
+                const selection = window.getSelection();
+                if (selection && selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    range.insertNode(document.createTextNode(text));
+                    editorRef.current.focus();
+                    handleInput();
+                }
+            }
+        }, [disabled, handleInput]);
+
+        const formatText = useCallback((command: string, value?: string) => {
+            if (editorRef.current && !disabled) {
+                try {
+                    document.execCommand(command, false, value);
+                    editorRef.current.focus();
+                    handleInput();
+                    updateToolbarState();
+                } catch (error) {
+                    console.warn('Format command not supported:', command);
+                }
+            }
+        }, [disabled, handleInput, updateToolbarState]);
+
+        const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                insertText('    '); // Insert 4 spaces
+            }
+        }, [insertText]);
+
+        const handlePaste = useCallback((e: React.ClipboardEvent) => {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            insertText(text);
+        }, [insertText]);
+
+        // Update toolbar state when selection changes
+        useEffect(() => {
+            const handleSelectionChange = () => {
+                updateToolbarState();
+            };
+
+            document.addEventListener('selectionchange', handleSelectionChange);
+            return () => {
+                document.removeEventListener('selectionchange', handleSelectionChange);
+            };
+        }, [updateToolbarState]);
+
+        // Cleanup timeout on unmount
+        useEffect(() => {
+            return () => {
+                if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                }
+            };
+        }, []);
+
+        return (
+            <div className={cn('space-y-2', className)}>
+                {/* Toolbar */}
+                <div 
+                    className="flex flex-wrap gap-1 p-2 border border-input rounded-t-md bg-muted"
+                    role="toolbar"
+                    aria-label="Rich text editor toolbar"
+                >
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => formatText('bold')}
+                        className={cn("h-8 w-8 p-0", isBold && "bg-accent")}
+                        aria-label="Bold"
+                        aria-pressed={isBold}
+                    >
+                        <Bold className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => formatText('italic')}
+                        className={cn("h-8 w-8 p-0", isItalic && "bg-accent")}
+                        aria-label="Italic"
+                        aria-pressed={isItalic}
+                    >
+                        <Italic className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => formatText('underline')}
+                        className={cn("h-8 w-8 p-0", isUnderline && "bg-accent")}
+                        aria-label="Underline"
+                        aria-pressed={isUnderline}
+                    >
+                        <Underline className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="w-px h-6 bg-border mx-1" />
+                    
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => formatText('insertUnorderedList')}
+                        className="h-8 w-8 p-0"
+                        aria-label="Bullet list"
+                    >
+                        <List className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => formatText('insertOrderedList')}
+                        className="h-8 w-8 p-0"
+                        aria-label="Numbered list"
+                    >
+                        <ListOrdered className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="w-px h-6 bg-border mx-1" />
+                    
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => insertText('\n\n')}
+                        className="h-8 px-2 text-xs"
+                        aria-label="Insert line break"
+                    >
+                        <Type className="h-3 w-3 mr-1" />
+                        Enter
+                    </Button>
+                </div>
+
+                {/* Editor */}
+                <div
+                    ref={editorRef}
+                    contentEditable={!disabled}
+                    onInput={handleInput}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
+                    className={cn(
+                        'min-h-[200px] p-3 border border-input rounded-b-md bg-background',
+                        'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                        isFocused && 'ring-2 ring-ring ring-offset-2',
+                        disabled && 'opacity-50 cursor-not-allowed'
+                    )}
+                    style={{ 
+                        whiteSpace: 'pre-wrap',
+                        minHeight: minHeight
+                    }}
+                    role="textbox"
+                    aria-label="Rich text editor"
+                    aria-multiline="true"
+                    aria-placeholder={placeholder}
+                    tabIndex={disabled ? -1 : 0}
+                    suppressContentEditableWarning
+                >
+                    {value && <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }} />}
+                </div>
+                
+                {/* Placeholder */}
+                {!value && placeholder && (
+                    <div className="absolute top-0 left-0 p-3 text-muted-foreground pointer-events-none">
+                        {placeholder}
+                    </div>
+                )}
+            </div>
+        );
+    }
+);
+
+RichTextEditor.displayName = 'RichTextEditor'; 

@@ -41,7 +41,11 @@ export default function LessonsEdit({ course, lesson }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    put(route('courses.lessons.update', [course.id, lesson.id]));
+    put(`/lessons/${lesson.id}`, {
+        onError: (errors) => {
+            console.error('Lesson update failed:', errors);
+        }
+    });
   };
 
   const handleContentChange = (content: string) => {
@@ -64,7 +68,7 @@ export default function LessonsEdit({ course, lesson }: Props) {
       <div className="container mx-auto py-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-6">
-            <TextLink href={route('courses.show', course.id)}>
+            <TextLink href={`/courses/${course.id}`}>
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 กลับ
@@ -173,7 +177,6 @@ export default function LessonsEdit({ course, lesson }: Props) {
                     value={data.content}
                     onChange={handleContentChange}
                     placeholder="เริ่มเขียนเนื้อหาบทเรียนของคุณ..."
-                    height={500}
                   />
                 ) : (
                   <div>
@@ -243,13 +246,13 @@ export default function LessonsEdit({ course, lesson }: Props) {
 
             <div className="flex justify-between items-center pt-6">
               <div className="flex items-center gap-4">
-                <TextLink href={route('courses.lessons.show', [course.id, lesson.id])}>
+                <TextLink href={`/lessons/${lesson.id}`}>
                   <Button type="button" variant="outline">
                     <Eye className="w-4 h-4 mr-2" />
                     ดูตัวอย่าง
                   </Button>
                 </TextLink>
-                <TextLink href={route('courses.lessons.files.index', [course.id, lesson.id])}>
+                                  <TextLink href={`/lessons/${lesson.id}/files`}>
                   <Button type="button" variant="outline">
                     จัดการไฟล์
                   </Button>
@@ -257,7 +260,7 @@ export default function LessonsEdit({ course, lesson }: Props) {
               </div>
               
               <div className="flex gap-4">
-                <TextLink href={route('courses.show', course.id)}>
+                <TextLink href={`/courses/${course.id}`}>
                   <Button type="button" variant="outline">
                     ยกเลิก
                   </Button>

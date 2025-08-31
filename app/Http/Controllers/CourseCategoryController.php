@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CourseCategory;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,28 +40,14 @@ class CourseCategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request)
     {
         $this->authorize('create', CourseCategory::class);
 
-        $request->validate([
-            'name' => 'required|string|max:255|unique:course_categories',
-            'description' => 'nullable|string',
-            'color' => 'required|string|max:7',
-            'icon' => 'nullable|string|max:50',
-            'order' => 'integer|min:0',
-        ]);
+        CourseCategory::create($request->validated());
 
-        CourseCategory::create([
-            'name' => $request->input('name'),
-            'description' => $request->input('description'),
-            'color' => $request->input('color'),
-            'icon' => $request->input('icon'),
-            'order' => $request->input('order', 0),
-        ]);
-
-        return redirect()->route('categories.index')
-            ->with('success', 'สร้างหมวดหมู่สำเร็จ');
+        return Redirect::route('categories.index')
+            ->with('success', 'Category created successfully!');
     }
 
     /**
@@ -91,30 +80,14 @@ class CourseCategoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, CourseCategory $category)
+    public function update(UpdateCategoryRequest $request, CourseCategory $category)
     {
         $this->authorize('update', $category);
 
-        $request->validate([
-            'name' => 'required|string|max:255|unique:course_categories,name,' . $category->id,
-            'description' => 'nullable|string',
-            'color' => 'required|string|max:7',
-            'icon' => 'nullable|string|max:50',
-            'order' => 'integer|min:0',
-            'is_active' => 'boolean',
-        ]);
+        $category->update($request->validated());
 
-        $category->update([
-            'name' => $request->input('name'),
-            'description' => $request->input('description'),
-            'color' => $request->input('color'),
-            'icon' => $request->input('icon'),
-            'order' => $request->input('order', $category->order),
-            'is_active' => $request->input('is_active', $category->is_active),
-        ]);
-
-        return redirect()->route('categories.index')
-            ->with('success', 'อัปเดตหมวดหมู่สำเร็จ');
+        return Redirect::route('categories.index')
+            ->with('success', 'Category updated successfully!');
     }
 
     /**
@@ -131,7 +104,7 @@ class CourseCategoryController extends Controller
 
         $category->delete();
 
-        return redirect()->route('categories.index')
-            ->with('success', 'ลบหมวดหมู่สำเร็จ');
+        return Redirect::route('categories.index')
+            ->with('success', 'Category deleted successfully!');
     }
 }

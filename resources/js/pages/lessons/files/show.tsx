@@ -57,7 +57,11 @@ interface LessonFileShowProps {
 
 export default function LessonFileShow({ course, lesson, file }: LessonFileShowProps) {
     const handleDelete = () => {
-        router.delete(route('courses.lessons.files.destroy', [course.id, lesson.id, file.id]));
+        router.delete(`/lessons/${lesson.id}/files/${file.id}`, {
+            onError: (errors) => {
+                console.error('File deletion failed:', errors);
+            }
+        });
     };
 
     const getFileIcon = (fileType: string) => {
@@ -92,7 +96,7 @@ export default function LessonFileShow({ course, lesson, file }: LessonFileShowP
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="sm" asChild>
-                            <Link href={route('courses.lessons.files.index', [course.id, lesson.id])}>
+                            <Link href={`/lessons/${lesson.id}/files`}>
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 กลับไปไฟล์
                             </Link>
@@ -264,13 +268,13 @@ export default function LessonFileShow({ course, lesson, file }: LessonFileShowP
                             </CardHeader>
                             <CardContent className="space-y-2">
                                 <Button asChild className="w-full">
-                                    <Link href={route('courses.lessons.files.download', [course.id, lesson.id, file.id])}>
+                                    <Link href={`/lessons/${lesson.id}/files/${file.id}/download`}>
                                         <Download className="mr-2 h-4 w-4" />
                                         ดาวน์โหลด
                                     </Link>
                                 </Button>
                                 <Button variant="outline" asChild className="w-full">
-                                    <Link href={route('courses.lessons.files.edit', [course.id, lesson.id, file.id])}>
+                                    <Link href={`/lessons/${lesson.id}/files/${file.id}/edit`}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         แก้ไข
                                     </Link>

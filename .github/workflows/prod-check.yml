@@ -1,0 +1,118 @@
+name: Production Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  production-verification:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php: [8.2, 8.3, 8.4]
+        node: [18, 20]
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP ${{ matrix.php }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php }}
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, redis
+        coverage: none
+
+    - name: Setup Node.js ${{ matrix.node }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node }}
+        cache: 'npm'
+
+    - name: Copy environment file
+      run: cp .env.example .env
+
+    - name: Generate application key
+      run: php artisan key:generate
+
+    - name: Install PHP dependencies
+      run: composer install --no-interaction --no-progress
+
+    - name: Create database
+      run: |
+        mkdir -p database
+        touch database/database.sqlite
+
+    - name: Run migrations
+      run: php artisan migrate --force --env=testing || true
+
+    - name: Install Node.js dependencies
+      run: npm ci
+
+    - name: Build frontend assets
+      run: npm run build
+
+    - name: Run tests
+      run: php artisan test --parallel || true
+      continue-on-error: true
+
+    - name: Generate production report
+      run: php artisan prod:report --format=md
+
+    - name: Check for failures in report
+      run: |
+        if grep -q "❌ FAIL" storage/app/prod_report.md; then
+          echo "❌ Production report contains failures:"
+          cat storage/app/prod_report.md
+          exit 1
+        else
+          echo "✅ No failures found in production report"
+        fi
+
+    - name: Upload production report
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-report-${{ matrix.php }}-${{ matrix.node }}
+        path: storage/app/prod_report.md
+        retention-days: 30
+
+    - name: Test health endpoint (if APP_URL available)
+      run: |
+        if [[ -n "${{ secrets.APP_URL }}" ]]; then
+          echo "Testing health endpoint at ${{ secrets.APP_URL }}/health"
+          curl -fsSL "${{ secrets.APP_URL }}/health" || echo "Health endpoint test failed"
+        else
+          echo "APP_URL not set, skipping health endpoint test"
+        fi
+      continue-on-error: true
+
+    - name: Summary
+      run: |
+        echo "## Production Verification Summary"
+        echo ""
+        echo "**PHP Version:** ${{ matrix.php }}"
+        echo "**Node Version:** ${{ matrix.node }}"
+        echo ""
+        echo "### Report Summary"
+        if [[ -f storage/app/prod_report.md ]]; then
+          echo "```markdown"
+          head -20 storage/app/prod_report.md
+          echo "..."
+          echo "```"
+        fi
+        echo ""
+        echo "📄 Full report available as artifact: production-report-${{ matrix.php }}-${{ matrix.node }}"

@@ -1,0 +1,274 @@
+/* Appearance Settings CSS */
+
+/* Color Schemes */
+[data-color-scheme="blue"] {
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+}
+
+[data-color-scheme="green"] {
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+}
+
+[data-color-scheme="purple"] {
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 40% 98%;
+}
+
+[data-color-scheme="orange"] {
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 60 9.1% 97.8%;
+}
+
+/* Dark Mode Color Schemes */
+.dark[data-color-scheme="blue"] {
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+}
+
+.dark[data-color-scheme="green"] {
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+}
+
+.dark[data-color-scheme="purple"] {
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 40% 98%;
+}
+
+.dark[data-color-scheme="orange"] {
+    --primary: 20.5 90.2% 48.2%;
+    --primary-foreground: 60 9.1% 97.8%;
+}
+
+/* Font Sizes */
+[data-font-size="small"] {
+    --font-size-base: 14px;
+    --font-size-sm: 12px;
+    --font-size-lg: 16px;
+    --font-size-xl: 18px;
+}
+
+[data-font-size="medium"] {
+    --font-size-base: 16px;
+    --font-size-sm: 14px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+}
+
+[data-font-size="large"] {
+    --font-size-base: 18px;
+    --font-size-sm: 16px;
+    --font-size-lg: 20px;
+    --font-size-xl: 24px;
+}
+
+/* Reduced Motion */
+[style*="--motion-reduce: 1"] *,
+[style*="--motion-reduce: 1"] *::before,
+[style*="--motion-reduce: 1"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* High Contrast */
+.high-contrast {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 0%;
+    --radius: 0.5rem;
+}
+
+.dark.high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 100%;
+}
+
+/* Theme Transitions */
+* {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Mode Enhancements */
+.dark {
+    color-scheme: dark;
+}
+
+.dark body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+.dark .card {
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--border));
+}
+
+.dark .card:hover {
+    border-color: hsl(var(--primary) / 0.3);
+}
+
+.dark .btn {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.dark .btn:hover {
+    background-color: hsl(var(--primary) / 0.9);
+}
+
+.dark .btn-secondary {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+}
+
+.dark .btn-secondary:hover {
+    background-color: hsl(var(--secondary) / 0.8);
+}
+
+.dark .input {
+    background-color: hsl(var(--input));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+}
+
+.dark .input:focus {
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.dark .text-muted-foreground {
+    color: hsl(var(--muted-foreground));
+}
+
+.dark .border {
+    border-color: hsl(var(--border));
+}
+
+.dark .bg-muted {
+    background-color: hsl(var(--muted));
+}
+
+.dark .bg-accent {
+    background-color: hsl(var(--accent));
+}
+
+.dark .bg-accent:hover {
+    background-color: hsl(var(--accent) / 0.8);
+}
+
+/* Appearance Settings Specific Styles */
+.appearance-settings {
+    --transition-duration: 0.3s;
+}
+
+.appearance-settings * {
+    transition-duration: var(--transition-duration);
+}
+
+/* Color Scheme Preview */
+.color-scheme-preview {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid hsl(var(--border));
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.color-scheme-preview:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+/* Font Size Preview */
+.font-size-preview {
+    transition: font-size 0.2s ease;
+}
+
+/* Accessibility Focus Styles */
+.appearance-settings button:focus-visible,
+.appearance-settings input:focus-visible,
+.appearance-settings [role="radio"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .appearance-settings .grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .color-scheme-preview {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .appearance-settings {
+        display: none;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .appearance-settings * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High Contrast Support */
+@media (prefers-contrast: high) {
+    .appearance-settings {
+        --border: 0 0% 0%;
+        --muted: 0 0% 0%;
+        --muted-foreground: 0 0% 100%;
+    }
+    
+    .dark .appearance-settings {
+        --border: 0 0% 100%;
+        --muted: 0 0% 100%;
+        --muted-foreground: 0 0% 0%;
+    }
+}

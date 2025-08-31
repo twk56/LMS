@@ -25,7 +25,7 @@ interface Props {
 
 export default function CategoriesIndex({ categories }: Props) {
   const handleDelete = (categoryId: number) => {
-    router.delete(route('categories.destroy', categoryId));
+    router.delete(`/categories/${categoryId}`);
   };
 
   return (
@@ -38,7 +38,7 @@ export default function CategoriesIndex({ categories }: Props) {
             <h1 className="text-3xl font-bold">หมวดหมู่หลักสูตร</h1>
             <p className="text-muted-foreground">จัดการหมวดหมู่หลักสูตรในระบบ</p>
           </div>
-          <Link href={route('categories.create')}>
+          <Link href="/categories/create">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               สร้างหมวดหมู่ใหม่
@@ -84,7 +84,7 @@ export default function CategoriesIndex({ categories }: Props) {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Link href={route('categories.edit', category.id)}>
+                    <Link href={`/categories/${category.id}/edit`}>
                       <Button variant="outline" size="sm">
                         <Edit className="w-4 h-4" />
                       </Button>
