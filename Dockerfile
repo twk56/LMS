@@ -1,5 +1,5 @@
-# Use PHP 8.2 with Apache
-FROM php:8.2-apache
+# Use PHP 8.3 with Apache (required by some dependencies)
+FROM php:8.3-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,19 +8,25 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    zlib1g-dev \
+    libzip-dev \
     zip \
     unzip \
     sqlite3 \
     libsqlite3-dev \
     nodejs \
     npm \
-    && docker-php-ext-install pdo pdo_sqlite mbstring exif pcntl bcmath gd
+    && docker-php-ext-configure zip \
+    && docker-php-ext-install pdo pdo_sqlite mbstring exif pcntl bcmath gd zip
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Allow composer to run as root in container
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Set working directory
 WORKDIR /var/www/html
