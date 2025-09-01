@@ -1,7 +1,7 @@
 # Laravel Development Makefile
 # Provides convenient commands for development
 
-.PHONY: help dev setup fix clean test-user install prod-check prod-check-migrate deploy docs
+.PHONY: help dev setup fix clean test-user install prod-check prod-check-migrate deploy docs test-production render-deploy
 
 # Default target
 help:
@@ -15,6 +15,8 @@ help:
 	@echo "  make dev-simple       - Start simple development servers"
 	@echo "  make prod-check       - Run production verification"
 	@echo "  make prod-check-migrate - Run production verification with migrations"
+	@echo "  make test-production  - Test production build locally"
+	@echo "  make render-deploy    - Prepare for Render deployment"
 	@echo "  make deploy           - Show deployment instructions"
 	@echo "  make docs             - Show documentation structure"
 
@@ -98,6 +100,42 @@ deploy:
 	@echo ""
 	@echo "✅ Check production readiness:"
 	@echo "   ./scripts/deployment/verify_prod.sh"
+
+# Test production build locally
+test-production:
+	@echo "🧪 Testing production build locally..."
+	@chmod +x scripts/deployment/test-production.sh
+	@./scripts/deployment/test-production.sh
+
+# Prepare for Render deployment
+render-deploy:
+	@echo "🚀 Preparing for Render deployment..."
+	@echo ""
+	@echo "✅ Files ready for deployment:"
+	@echo "   - render.yaml (Render configuration)"
+	@echo "   - Dockerfile (Container configuration)"
+	@echo "   - Fixed CoursePolicy for published courses"
+	@echo "   - Added flash message support"
+	@echo "   - Fixed database seeder"
+	@echo ""
+	@echo "📋 Next steps:"
+	@echo "1. Push changes to GitHub:"
+	@echo "   git add ."
+	@echo "   git commit -m 'Prepare for Render deployment'"
+	@echo "   git push origin main"
+	@echo ""
+	@echo "2. Go to Render Dashboard:"
+	@echo "   https://dashboard.render.com"
+	@echo ""
+	@echo "3. Create New Web Service:"
+	@echo "   - Connect GitHub repository"
+	@echo "   - Use render.yaml configuration"
+	@echo "   - Deploy automatically"
+	@echo ""
+	@echo "4. Test deployment:"
+	@echo "   - Check build logs"
+	@echo "   - Visit your app URL"
+	@echo "   - Test /health endpoint"
 
 # Show documentation structure
 docs:

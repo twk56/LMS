@@ -1,19 +1,32 @@
 services:
   - type: web
     name: lms-app
-    env: node
+    runtime: docker
     plan: free
     buildCommand: |
+      # Install PHP dependencies
       composer install --no-dev --optimize-autoloader
+      
+      # Install Node.js dependencies and build assets
       npm ci
       npm run build
+      
+      # Create SQLite database if it doesn't exist
+      touch database/database.sqlite
+      
+      # Laravel setup commands
       php artisan key:generate --force
-      php artisan migrate --force
+      php artisan migrate --force --seed
       php artisan storage:link
+      
+      # Cache optimization
       php artisan config:cache
       php artisan route:cache
       php artisan view:cache
       php artisan optimize
+      
+      # Generate Ziggy routes
+      php artisan ziggy:generate
     startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
     healthCheckPath: /health
     envVars:
@@ -21,8 +34,12 @@ services:
         value: production
       - key: APP_DEBUG
         value: false
+      - key: APP_URL
+        generateValue: true
       - key: DB_CONNECTION
         value: sqlite
+      - key: DB_DATABASE
+        value: /opt/render/project/src/database/database.sqlite
       - key: CACHE_STORE
         value: file
       - key: SESSION_DRIVER
@@ -31,3 +48,5 @@ services:
         value: database
       - key: LOG_CHANNEL
         value: stderr
+      - key: LOG_LEVEL
+        value: info

@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('lessons', function (Blueprint $table) {
-            $table->enum('status', ['draft', 'published'])->default('draft')->after('order');
+            // Check if status column doesn't exist before adding it
+            if (!Schema::hasColumn('lessons', 'status')) {
+                $table->enum('status', ['draft', 'published'])->default('draft')->after('order');
+            }
         });
     }
 
@@ -22,7 +25,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('lessons', function (Blueprint $table) {
-            $table->dropColumn('status');
+            // Only drop if column exists
+            if (Schema::hasColumn('lessons', 'status')) {
+                $table->dropColumn('status');
+            }
         });
     }
 };

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Auth\Access\AuthorizationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
@@ -135,6 +136,8 @@ class CourseController extends Controller
                 'isAdmin' => $user->role === 'admin',
                 'isEnrolled' => $isEnrolled,
             ]);
+        } catch (AuthorizationException $e) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหลักสูตรนี้');
         } catch (Exception $e) {
             Log::error('Error in CourseController@show', [
                 'course_id' => $course->id,

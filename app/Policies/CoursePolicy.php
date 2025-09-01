@@ -25,7 +25,12 @@ class CoursePolicy
             return true;
         }
 
-        // Student can view enrolled courses
+        // Anyone can view published courses
+        if ($course->status === 'published') {
+            return true;
+        }
+
+        // Student can view enrolled courses (including draft courses they're enrolled in)
         return $course->students()->where('user_id', $user->id)->exists();
     }
 
