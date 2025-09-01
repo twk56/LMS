@@ -46,6 +46,18 @@ RUN npm ci
 # Copy application code
 COPY . .
 
+# Create .env from production template if not present and adjust DB path
+RUN if [ -f deployment/env.production ]; then \
+        cp deployment/env.production .env; \
+    elif [ -f env.production ]; then \
+        cp env.production .env; \
+    else \
+        cp .env.example .env || true; \
+    fi \
+    && sed -i 's|^DB_DATABASE=.*|DB_DATABASE=/var/www/html/database/database.sqlite|' .env \
+    && sed -i 's|^APP_ENV=.*|APP_ENV=production|' .env \
+    && sed -i 's|^APP_DEBUG=.*|APP_DEBUG=false|' .env
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
