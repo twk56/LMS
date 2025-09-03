@@ -1,0 +1,244 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "LMS Enterprise API",
+        "description": "Learning Management System Enterprise API Documentation",
+        "contact": {
+            "name": "API Support Team",
+            "email": "support@enterprise-lms.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://my-default-host.com",
+            "description": "API Server"
+        }
+    ],
+    "paths": {
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "Health Check",
+                "description": "Check if the API is running",
+                "operationId": "healthCheck",
+                "responses": {
+                    "200": {
+                        "description": "API is healthy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "healthy"
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "version": {
+                                            "type": "string",
+                                            "example": "1.0.0"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/version": {
+            "get": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "Get API Version",
+                "description": "Get current API version information",
+                "operationId": "getVersion",
+                "responses": {
+                    "200": {
+                        "description": "Version information",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "version": {
+                                            "type": "string",
+                                            "example": "1.0.0"
+                                        },
+                                        "laravel_version": {
+                                            "type": "string"
+                                        },
+                                        "php_version": {
+                                            "type": "string"
+                                        },
+                                        "features": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/videos": {
+            "post": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Upload video",
+                "description": "Upload a new video file to S3 and start transcoding",
+                "operationId": "uploadVideo",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "video": {
+                                        "description": "Video file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "title": {
+                                        "description": "Video title",
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "description": "Video description",
+                                        "type": "string",
+                                        "maxLength": 1000
+                                    },
+                                    "course_id": {
+                                        "description": "Associated course ID",
+                                        "type": "integer"
+                                    },
+                                    "lesson_id": {
+                                        "description": "Associated lesson ID",
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Video uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "upload": {
+                                                    "type": "object"
+                                                },
+                                                "transcode_job_id": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "signed_url": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Video uploaded successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Videos",
+            "description": "Video streaming and management endpoints"
+        },
+        {
+            "name": "System",
+            "description": "System"
+        }
+    ]
+}

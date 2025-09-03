@@ -26,6 +26,15 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Initialize Sentry monitoring
+        if (config('sentry.dsn') && !$this->app->runningInConsole()) {
+            \Sentry\init([
+                'dsn' => config('sentry.dsn'),
+                'traces_sample_rate' => config('sentry.traces_sample_rate', 0.2),
+                'profiles_sample_rate' => config('sentry.profiles_sample_rate', 0.2),
+            ]);
+        }
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ProdReportCommand::class,

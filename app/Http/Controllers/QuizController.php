@@ -54,7 +54,7 @@ class QuizController extends Controller
             'questions.*.answers.*.is_correct' => 'required|boolean',
         ]);
 
-        $quiz = $lesson->quiz()->create([
+        $quiz = $lesson->quizzes()->create([
             'title' => $request->title,
             'description' => $request->description,
             'time_limit' => $request->time_limit,
@@ -116,7 +116,7 @@ class QuizController extends Controller
             ]);
         }
 
-        return redirect()->route('courses.lessons.quizzes.show', [$course, $lesson, $quiz]);
+        return redirect("/quizzes/{$quiz->id}");
     }
 
     public function submit(Request $request, Course $course, Lesson $lesson, Quiz $quiz)
@@ -167,8 +167,7 @@ class QuizController extends Controller
         $userAttempt->calculateScore();
         $userAttempt->update(['completed_at' => now()]);
 
-        return redirect()->route('courses.lessons.quizzes.result', [$course, $lesson, $quiz])
-            ->with('success', 'ส่งแบบทดสอบสำเร็จ');
+        return redirect()->back()->with('success', 'ส่งแบบทดสอบสำเร็จ');
     }
 
     public function result(Course $course, Lesson $lesson, Quiz $quiz)
@@ -176,7 +175,7 @@ class QuizController extends Controller
         $userAttempt = $quiz->getUserAttempt(auth()->id());
         
         if (!$userAttempt || !$userAttempt->completed_at) {
-            return redirect()->route('courses.lessons.quizzes.show', [$course, $lesson, $quiz]);
+            return redirect()->back();
         }
 
         return Inertia::render('quizzes/result', [

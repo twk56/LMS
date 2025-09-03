@@ -1,4 +1,5 @@
 import '../css/app.css';
+import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -35,6 +36,12 @@ createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
+        // Clear any existing content
+        if ((el as any)._reactRootContainer) {
+            (el as any)._reactRootContainer.unmount();
+            delete (el as any)._reactRootContainer;
+        }
+
         const root = createRoot(el);
 
         root.render(

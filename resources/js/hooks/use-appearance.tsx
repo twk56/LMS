@@ -3,13 +3,6 @@ import { router } from '@inertiajs/react';
 
 export interface AppearanceSettings {
     theme: 'light' | 'dark' | 'system';
-    sidebar: 'expanded' | 'collapsed';
-    navigation: 'sidebar' | 'top';
-    density: 'comfortable' | 'compact';
-    colorScheme: 'blue' | 'green' | 'purple' | 'orange';
-    reducedMotion: boolean;
-    highContrast: boolean;
-    fontSize: 'small' | 'medium' | 'large';
 }
 
 export interface UseAppearanceReturn {
@@ -24,13 +17,6 @@ export interface UseAppearanceReturn {
 export function useAppearance(): UseAppearanceReturn {
     const [settings, setSettings] = useState<AppearanceSettings>({
         theme: 'system',
-        sidebar: 'expanded',
-        navigation: 'sidebar',
-        density: 'comfortable',
-        colorScheme: 'blue',
-        reducedMotion: false,
-        highContrast: false,
-        fontSize: 'medium',
     });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -52,10 +38,11 @@ export function useAppearance(): UseAppearanceReturn {
         setSettings(updatedSettings);
         localStorage.setItem('appearance-settings', JSON.stringify(updatedSettings));
         
-        // Send to server if needed
-        setIsLoading(true);
-        router.post('/settings/appearance', updatedSettings, {
+        // Send to server in background (don't block UI)
+        router.patch('/settings/appearance', { theme: updatedSettings.theme }, {
             onFinish: () => setIsLoading(false),
+            preserveScroll: true,
+            preserveState: true,
         });
     };
 
@@ -64,19 +51,13 @@ export function useAppearance(): UseAppearanceReturn {
     const resetSettings = () => {
         const defaultSettings: AppearanceSettings = {
             theme: 'system',
-            sidebar: 'expanded',
-            navigation: 'sidebar',
-            density: 'comfortable',
-            colorScheme: 'blue',
-            reducedMotion: false,
-            highContrast: false,
-            fontSize: 'medium',
         };
         setSettings(defaultSettings);
         localStorage.removeItem('appearance-settings');
         
+        // Send default settings to server
         setIsLoading(true);
-        router.post('/settings/appearance/reset', {}, {
+        router.patch('/settings/appearance', { theme: defaultSettings.theme }, {
             onFinish: () => setIsLoading(false),
         });
     };

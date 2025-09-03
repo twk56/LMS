@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -99,6 +99,32 @@ class User extends Authenticatable
     public function quizAttempts(): HasMany
     {
         return $this->hasMany(QuizAttempt::class);
+    }
+
+    /**
+     * Get chat rooms where this user is a participant
+     */
+    public function chatRooms()
+    {
+        return $this->belongsToMany(ChatRoom::class, 'chat_room_participants')
+                    ->withPivot('role', 'is_active', 'last_seen_at', 'joined_at')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get chat messages sent by this user
+     */
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
+
+    /**
+     * Get the user's appearance settings.
+     */
+    public function appearanceSetting()
+    {
+        return $this->hasOne(AppearanceSetting::class);
     }
 
     /**

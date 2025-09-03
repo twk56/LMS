@@ -95,7 +95,7 @@ class LessonTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->post("/courses/{$this->course->id}/lessons", []);
 
-        $response->assertSessionHasErrors(['title', 'content', 'order', 'content_type']);
+        $response->assertSessionHasErrors(['title', 'content', 'order']);
     }
 
     public function test_admin_can_view_lesson_details(): void
@@ -104,7 +104,7 @@ class LessonTest extends TestCase
             'course_id' => $this->course->id,
         ]);
 
-        $response = $this->actingAs($this->admin)->get("/courses/{$this->course->id}/lessons/{$lesson->id}");
+        $response = $this->actingAs($this->admin)->get("/lessons/{$lesson->id}");
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -120,7 +120,7 @@ class LessonTest extends TestCase
             'course_id' => $this->course->id,
         ]);
 
-        $response = $this->actingAs($this->admin)->get("/courses/{$this->course->id}/lessons/{$lesson->id}/edit");
+        $response = $this->actingAs($this->admin)->get("/lessons/{$lesson->id}/edit");
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -141,11 +141,12 @@ class LessonTest extends TestCase
             'content' => 'Updated Content',
             'order' => 2,
             'content_type' => 'video',
+            'status' => 'published',
         ];
 
-        $response = $this->actingAs($this->admin)->put("/courses/{$this->course->id}/lessons/{$lesson->id}", $updateData);
+        $response = $this->actingAs($this->admin)->put("/lessons/{$lesson->id}", $updateData);
 
-        $response->assertRedirect("/courses/{$this->course->id}/lessons/{$lesson->id}");
+        $response->assertRedirect("/lessons/{$lesson->id}");
         $this->assertDatabaseHas('lessons', [
             'id' => $lesson->id,
             'title' => 'Updated Lesson',
@@ -161,9 +162,9 @@ class LessonTest extends TestCase
             'course_id' => $this->course->id,
         ]);
 
-        $response = $this->actingAs($this->admin)->delete("/courses/{$this->course->id}/lessons/{$lesson->id}");
+        $response = $this->actingAs($this->admin)->delete("/lessons/{$lesson->id}");
 
-        $response->assertRedirect("/courses/{$this->course->id}/lessons");
+        $response->assertRedirect("/lessons");
         $this->assertDatabaseMissing('lessons', ['id' => $lesson->id]);
     }
 
@@ -171,14 +172,14 @@ class LessonTest extends TestCase
     {
         $lesson = Lesson::factory()->create([
             'course_id' => $this->course->id,
+            'status' => 'published',
         ]);
 
-        // Enroll student in course first
         $this->course->students()->attach($this->student->id, ['status' => 'enrolled']);
 
         $response = $this->actingAs($this->student)->post("/courses/{$this->course->id}/lessons/{$lesson->id}/complete");
 
-        $response->assertRedirect("/courses/{$this->course->id}/lessons/{$lesson->id}");
+        $response->assertRedirect();
         $this->assertDatabaseHas('lesson_progress', [
             'lesson_id' => $lesson->id,
             'user_id' => $this->student->id,

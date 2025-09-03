@@ -36,7 +36,7 @@ export default function DeleteUser() {
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
-                                destroy('/profile', {
+                                destroy('/settings/profile', {
                                     onError: (errors) => {
                                         console.error('Account deletion failed:', errors);
                                         passwordInput.current?.focus();

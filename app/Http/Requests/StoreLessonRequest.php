@@ -10,6 +10,7 @@ class StoreLessonRequest extends FormRequest
             'title'   => ['required','string','max:255'],
             'order'   => ['required','integer','min:1'],
             'content' => ['required','string'],
+            'content_type' => ['nullable','string','in:text,rich_text,video,file'],
         ];
     }
     public function messages(): array {

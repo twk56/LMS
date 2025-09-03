@@ -25,10 +25,17 @@ export function ThemeProvider({
     storageKey = 'vite-ui-theme',
     ...props
 }: ThemeProviderProps) {
-    const { settings } = useAppearance();
+    const { settings, updateSettings } = useAppearance();
     const [theme, setTheme] = useState<ThemeProviderState['theme']>(
-        () => (localStorage.getItem(storageKey) as ThemeProviderState['theme']) || defaultTheme
+        () => settings.theme || defaultTheme
     );
+
+    // Sync theme with appearance settings
+    useEffect(() => {
+        if (settings.theme && settings.theme !== theme) {
+            setTheme(settings.theme);
+        }
+    }, [settings.theme, theme]);
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -47,34 +54,12 @@ export function ThemeProvider({
         root.classList.add(theme);
     }, [theme]);
 
-    useEffect(() => {
-        const root = window.document.documentElement;
-
-        // Apply appearance settings
-        if (settings.reducedMotion) {
-            root.style.setProperty('--motion-reduce', '1');
-        } else {
-            root.style.removeProperty('--motion-reduce');
-        }
-
-        if (settings.highContrast) {
-            root.classList.add('high-contrast');
-        } else {
-            root.classList.remove('high-contrast');
-        }
-
-        root.setAttribute('data-font-size', settings.fontSize);
-        root.setAttribute('data-color-scheme', settings.colorScheme);
-        root.setAttribute('data-density', settings.density);
-        root.setAttribute('data-navigation', settings.navigation);
-        root.setAttribute('data-sidebar', settings.sidebar);
-    }, [settings]);
-
     const value = {
         theme,
-        setTheme: (theme: ThemeProviderState['theme']) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
+        setTheme: (newTheme: ThemeProviderState['theme']) => {
+            setTheme(newTheme);
+            // Update appearance settings when theme changes
+            updateSettings({ theme: newTheme });
         },
     };
 

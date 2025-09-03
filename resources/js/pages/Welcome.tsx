@@ -73,21 +73,21 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
 
   const testimonials = [
     {
-      quote: "ระบบที่ยอดเยี่ยม ใช้งานง่าย และมี UI ที่สวยงามมาก",
-      author: "อาจารย์สมชาย วิทยากร",
+      quote: "ระบบ LMS ที่ใช้งานง่าย ช่วยให้การสอนมีประสิทธิภาพมากขึ้น และนักเรียนเข้าใจบทเรียนได้ดีขึ้น",
+      author: "อาจารย์ดร.สมชาย วิทยากร",
       role: "อาจารย์มหาวิทยาลัย",
       avatar: "👨‍🏫"
     },
     {
-      quote: "เรียนรู้ได้ทุกที่ทุกเวลา ระบบรองรับได้ดีมาก",
-      author: "น.ส.มานี นักเรียน",
-      role: "นักศึกษา",
+      quote: "สามารถเรียนรู้ได้ทุกที่ทุกเวลา ระบบมีเสถียรภาพสูง และติดตามความก้าวหน้าได้ง่าย",
+      author: "น.ส.สุดา นักเรียน",
+      role: "นักศึกษาปริญญาตรี",
       avatar: "👩‍🎓"
     },
     {
-      quote: "การจัดการหลักสูตรง่ายดาย และมีฟีเจอร์ครบครัน",
-      author: "คุณสมศักดิ์ ผู้จัดการ",
-      role: "ผู้บริหาร",
+      quote: "การจัดการหลักสูตรและการติดตามผลการเรียนของนักเรียนทำได้อย่างมีระบบและครบถ้วน",
+      author: "คุณสมศักดิ์ ผู้อำนวยการ",
+      role: "ผู้บริหารสถาบันการศึกษา",
       avatar: "👨‍💼"
     }
   ];
@@ -175,21 +175,21 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                 <div className="mb-8">
                   <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-500/30 rounded-full px-6 py-3 mb-8">
                     <Sparkles className="h-5 w-5 text-purple-400" />
-                    <span className="text-purple-300 font-medium">Creative Learning Experience</span>
+                    <span className="text-purple-300 font-medium">ระบบจัดการการเรียนรู้ออนไลน์</span>
                   </div>
                 </div>
                 
                 <h1 className="text-6xl lg:text-8xl font-black mb-8 leading-tight">
-                  <span className="block text-white mb-4">Learn</span>
+                  <span className="block text-white mb-4">เรียนรู้</span>
                   <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent animate-pulse">
-                    Create
+                    พัฒนา
                   </span>
-                  <span className="block text-white">Inspire</span>
+                  <span className="block text-white">สำเร็จ</span>
                 </h1>
                 
                 <p className="text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">
-                  ระบบการเรียนรู้ที่ผสมผสานความคิดสร้างสรรค์ เทคโนโลยีล้ำสมัย 
-                  และประสบการณ์ที่ไม่เหมือนใคร
+                  ระบบจัดการการเรียนรู้ออนไลน์ที่ทันสมัย เพื่อการศึกษาที่มีคุณภาพ 
+                  และการพัฒนาทักษะในศตวรรษที่ 21
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
@@ -230,10 +230,10 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                 {/* Creative Stats */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-4xl mx-auto">
                   {[
-                    { number: "2.5K+", label: "Creative Learners", icon: Heart, color: "from-pink-500 to-rose-500" },
-                    { number: "150+", label: "Courses", icon: Lightbulb, color: "from-yellow-500 to-orange-500" },
-                    { number: "98%", label: "Satisfaction", icon: Star, color: "from-purple-500 to-indigo-500" },
-                    { number: "24/7", label: "Support", icon: Coffee, color: "from-blue-500 to-cyan-500" }
+                    { number: "2.5K+", label: "ผู้เรียน", icon: Heart, color: "from-pink-500 to-rose-500" },
+                    { number: "150+", label: "หลักสูตร", icon: Lightbulb, color: "from-yellow-500 to-orange-500" },
+                    { number: "98%", label: "ความพึงพอใจ", icon: Star, color: "from-purple-500 to-indigo-500" },
+                    { number: "24/7", label: "ช่วยเหลือ", icon: Coffee, color: "from-blue-500 to-cyan-500" }
                   ].map((stat, index) => (
                     <div key={index} className="text-center group" style={{animationDelay: `${index * 0.1}s`}}>
                       <div className={`w-16 h-16 mx-auto mb-4 bg-gradient-to-br ${stat.color} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-xl`}>
@@ -260,38 +260,38 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-5xl lg:text-6xl font-black text-white mb-6">
-              Creative
+              ฟีเจอร์
               <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent">
-                Solutions
+                เด่น
               </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              เครื่องมือสร้างสรรค์ที่จะเปลี่ยนการเรียนรู้ของคุณให้เป็นประสบการณ์ที่ไม่มีวันลืม
+              เครื่องมือการเรียนรู้ที่ทันสมัยและครบครัน เพื่อประสบการณ์การศึกษาที่มีประสิทธิภาพ
             </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
             {[
               {
-                title: "Interactive Learning",
-                description: "การเรียนรู้แบบโต้ตอบที่ทำให้ทุกบทเรียนมีชีวิตชีวา",
+                title: "การเรียนรู้แบบโต้ตอบ",
+                description: "ระบบการเรียนรู้ที่มีปฏิสัมพันธ์สูง เพิ่มความเข้าใจและความสนใจ",
                 icon: MousePointer,
                 color: "from-purple-500 to-pink-500",
-                features: ["VR/AR Integration", "Gamification", "Real-time Feedback"]
+                features: ["บทเรียนแบบโต้ตอบ", "ระบบเกมมิฟิเคชัน", "ข้อเสนอแนะแบบทันที"]
               },
               {
-                title: "Creative Tools",
-                description: "เครื่องมือสร้างสรรค์ที่ช่วยให้คุณแสดงออกได้อย่างเต็มที่",
+                title: "จัดการหลักสูตร",
+                description: "เครื่องมือสำหรับสร้าง จัดการ และติดตามหลักสูตรอย่างมีประสิทธิภาพ",
                 icon: Palette,
                 color: "from-pink-500 to-yellow-500",
-                features: ["Design Studio", "Video Editor", "Animation Tools"]
+                features: ["สร้างบทเรียน", "จัดการเนื้อหา", "แบ่งปันทรัพยากร"]
               },
               {
-                title: "Smart Analytics",
-                description: "การวิเคราะห์อัจฉริยะที่เข้าใจการเรียนรู้ของคุณ",
+                title: "วิเคราะห์และรายงาน",
+                description: "ระบบติดตามและวิเคราะห์ผลการเรียนรู้แบบละเอียดและแม่นยำ",
                 icon: Brain,
                 color: "from-blue-500 to-purple-500",
-                features: ["AI Insights", "Progress Tracking", "Personalized Path"]
+                features: ["รายงานความก้าวหน้า", "การวิเคราะห์ผลการเรียน", "แนะนำเส้นทางการเรียน"]
               }
             ].map((service, index) => (
               <div
@@ -327,7 +327,7 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
             ))}
           </div>
         </div>
-      </div>
+          </div>
 
       {/* Testimonials Carousel */}
       <div className="bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 py-20">
@@ -391,15 +391,15 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
             </div>
             
             <h2 className="text-5xl lg:text-6xl font-black text-white mb-6">
-              Start Your
+              เริ่มต้น
               <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent">
-                Creative Journey
+                การเรียนรู้
               </span>
             </h2>
             
             <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
-              เข้าร่วมกับชุมชนนักเรียนและครูผู้สอนที่มีความคิดสร้างสรรค์ 
-              และเริ่มสร้างประสบการณ์การเรียนรู้ที่ไม่เหมือนใคร
+              เข้าร่วมกับชุมชนการเรียนรู้ออนไลน์ที่ทันสมัย 
+              เพื่อพัฒนาตนเองและเสริมสร้างทักษะในศตวรรษที่ 21
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
@@ -414,29 +414,29 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                 </Button>
               ) : (
                 <>
-                  {canLogin && (
+              {canLogin && (
                     <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 via-pink-600 to-yellow-500 hover:from-purple-700 hover:via-pink-700 hover:to-yellow-600 text-white shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 px-12 py-6 text-xl relative overflow-hidden group">
                       <a href="/login" className="flex items-center space-x-3 relative z-10">
                         <Play className="h-6 w-6" />
                         <span>เริ่มเรียนรู้</span>
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                         <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
-                      </a>
-                    </Button>
-                  )}
-                  
-                  {canRegister && (
+                  </a>
+                </Button>
+              )}
+              
+              {canRegister && (
                     <Button asChild variant="outline" size="lg" className="border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all duration-300 px-12 py-6 text-xl group">
                       <a href="/register" className="flex items-center space-x-3">
                         <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
                         <span>สร้างบัญชี</span>
-                      </a>
-                    </Button>
+                  </a>
+                </Button>
                   )}
                 </>
               )}
-            </div>
-            
+          </div>
+
             {/* Tech Stack Minimal */}
             <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400">
               <span className="bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
@@ -479,8 +479,8 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                 </div>
               </div>
               <p className="text-gray-300 leading-relaxed max-w-md">
-                ระบบจัดการการเรียนรู้ที่ผสมผสานความคิดสร้างสรรค์ 
-                เทคโนโลยีล้ำสมัย และประสบการณ์ที่ไม่เหมือนใคร
+                ระบบจัดการการเรียนรู้ออนไลน์ที่ทันสมัย 
+                เพื่อการศึกษาที่มีคุณภาพและการพัฒนาทักษะอย่างต่อเนื่อง
               </p>
             </div>
             

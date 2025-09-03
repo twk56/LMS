@@ -15,6 +15,9 @@ use App\Http\Controllers\LessonFileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\VideoController;
+use App\Http\Controllers\Api\SwaggerController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -36,6 +39,17 @@ use Inertia\Inertia;
 
 // Health check endpoint
 Route::get('/health', HealthController::class);
+
+// API Routes
+Route::prefix('api')->group(function () {
+    Route::get('/health', [SwaggerController::class, 'health']);
+    Route::get('/version', [SwaggerController::class, 'version']);
+    
+    // Swagger Documentation
+    Route::get('/docs', function () {
+        return redirect('/api/documentation');
+    });
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -85,6 +99,26 @@ Route::middleware([
     Route::prefix('performance')->name('performance.')->group(function () {
         Route::get('/', [PerformanceController::class, 'dashboard'])->name('dashboard');
         Route::post('/log', [PerformanceController::class, 'logMetrics'])->name('log');
+    });
+
+    // Video Routes
+    Route::prefix('videos')->name('videos.')->group(function () {
+        Route::get('/create', [VideoController::class, 'create'])->name('create');
+        Route::post('/', [VideoController::class, 'store'])->name('store');
+        Route::get('/stream/{key}', [VideoController::class, 'stream'])->name('stream');
+        Route::get('/metadata/{key}', [VideoController::class, 'metadata'])->name('metadata');
+        Route::delete('/{key}', [VideoController::class, 'destroy'])->name('destroy');
+        Route::get('/transcoding-status/{jobId}', [VideoController::class, 'transcodingStatus'])->name('transcoding-status');
+    });
+
+    // Chat Routes
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->name('index');
+        Route::get('/support', [ChatController::class, 'getSupportChat'])->name('support');
+        Route::get('/rooms/{room}/messages', [ChatController::class, 'getMessages'])->name('messages');
+        Route::post('/rooms/{room}/messages', [ChatController::class, 'sendMessage'])->name('send-message');
+        Route::post('/rooms', [ChatController::class, 'createRoom'])->name('create-room');
+        Route::post('/rooms/{room}/read', [ChatController::class, 'markAsRead'])->name('mark-read');
     });
 
     // Notification Routes (Phase 3)
@@ -189,27 +223,32 @@ Route::middleware([
         Route::get('/tenants/{tenant}/report', [EnterpriseController::class, 'apiTenantReport'])->name('tenants.report');
     });
 
-    // Course Routes
-    Route::resource('courses', CourseController::class);
-    Route::post('/courses/{course}/enroll', [CourseController::class, 'enroll'])->name('courses.enroll');
-    Route::post('/courses/{course}/unenroll', [CourseController::class, 'unenroll'])->name('courses.unenroll');
+    // Course Routes - Public access for viewing courses
+    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+    
+    // Protected course routes
+    Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+        Route::resource('courses', CourseController::class)->except(['index']);
+        Route::post('/courses/{course}/enroll', [CourseController::class, 'enroll'])->name('courses.enroll');
+        Route::post('/courses/{course}/unenroll', [CourseController::class, 'unenroll'])->name('courses.unenroll');
+        
+        // Lesson Routes
+        Route::resource('courses.lessons', LessonController::class)->shallow();
+        Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
+        Route::post('/courses/{course}/lessons/{lesson}/complete', [LessonController::class, 'complete'])->name('lessons.complete');
+        
+        // Lesson File Routes
+        Route::resource('lessons.files', LessonFileController::class)->shallow();
+        
+        // Quiz Routes
+        Route::resource('lessons.quizzes', QuizController::class)->shallow();
+        Route::post('/courses/{course}/lessons/{lesson}/quizzes/{quiz}/start', [QuizController::class, 'start'])->name('quizzes.start');
+        Route::post('/courses/{course}/lessons/{lesson}/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
+        Route::get('/courses/{course}/lessons/{lesson}/quizzes/{quiz}/result', [QuizController::class, 'result'])->name('quizzes.result');
+    });
 
     // Category Routes
     Route::resource('categories', CourseCategoryController::class);
-
-    // Lesson Routes
-    Route::resource('courses.lessons', LessonController::class)->shallow();
-    Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
-    Route::post('/courses/{course}/lessons/{lesson}/complete', [LessonController::class, 'complete'])->name('lessons.complete');
-
-    // Lesson File Routes
-    Route::resource('lessons.files', LessonFileController::class)->shallow();
-
-    // Quiz Routes
-    Route::resource('lessons.quizzes', QuizController::class)->shallow();
-    Route::post('/courses/{course}/lessons/{lesson}/quizzes/{quiz}/start', [QuizController::class, 'start'])->name('quizzes.start');
-    Route::post('/courses/{course}/lessons/{lesson}/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
-    Route::get('/courses/{course}/lessons/{lesson}/quizzes/{quiz}/result', [QuizController::class, 'result'])->name('quizzes.result');
 
     // Certificate Routes
     Route::resource('certificates', CertificateController::class)->only(['index', 'show']);

@@ -12,16 +12,22 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Http\RedirectResponse;
 
 class DashboardController extends Controller
 {
     /**
-     * Display the dashboard with optimized queries
+     * Display the dashboard.
      */
-    public function index(): Response
+    public function index(): Response|RedirectResponse
     {
         try {
             $user = Auth::user();
+            
+            // Check if user is authenticated
+            if (!$user) {
+                return redirect()->route('login');
+            }
             
             if ($user->role === 'admin') {
                 // Admin dashboard - show all courses with eager loading

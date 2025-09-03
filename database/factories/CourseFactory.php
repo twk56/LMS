@@ -15,7 +15,7 @@ class CourseFactory extends Factory
             'description' => fake()->paragraph(),
             'status' => fake()->randomElement(['draft', 'published', 'archived']),
             'image' => null,
-            'created_by' => User::factory(),
+            'created_by' => User::factory(), // Create a user for created_by
             'category_id' => CourseCategory::factory(),
             'created_at' => fake()->dateTimeBetween('-1 year', 'now'),
             'updated_at' => fake()->dateTimeBetween('-1 month', 'now'),

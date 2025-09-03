@@ -26,6 +26,24 @@ class CourseController extends Controller
             $user = Auth::user();
             $search = $request->get('search');
             
+            if (!$user) {
+                // Guest users see only published courses
+                $courses = Course::with(['creator', 'category'])
+                    ->where('status', 'published')
+                    ->when($search, function ($query, $search) {
+                        $query->where('title', 'like', "%{$search}%")
+                              ->orWhere('description', 'like', "%{$search}%");
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+                
+                return Inertia::render('courses/index', [
+                    'courses' => $courses,
+                    'isAdmin' => false,
+                    'search' => $search,
+                ]);
+            }
+            
             if ($user->role === 'admin') {
                 $courses = Course::with(['creator', 'category'])
                     ->where('created_by', $user->id)
@@ -49,7 +67,7 @@ class CourseController extends Controller
             return Inertia::render('courses/index', [
                 'courses' => $courses,
                 'isAdmin' => $user->role === 'admin',
-                'search' => $search,
+                'search' => $request->get('search'),
             ]);
         } catch (Exception $e) {
             Log::error('Error in CourseController@index', [
@@ -73,11 +91,15 @@ class CourseController extends Controller
     public function create(): Response
     {
         try {
+            $this->authorize('create', Course::class);
+            
             $categories = CourseCategory::active()->ordered()->get();
             
             return Inertia::render('courses/create', [
                 'categories' => $categories,
             ]);
+        } catch (AuthorizationException $e) {
+            abort(403, 'คุณไม่มีสิทธิ์สร้างหลักสูตร');
         } catch (Exception $e) {
             Log::error('Error in CourseController@create', [
                 'user_id' => Auth::id(),
@@ -97,23 +119,29 @@ class CourseController extends Controller
      */
     public function store(StoreCourseRequest $request)
     {
-        $course = Course::create([
-            'title' => $request->validated('title'),
-            'description' => $request->validated('description'),
-            'image' => $request->validated('image'),
-            'category_id' => $request->validated('category_id'),
-            'status' => $request->validated('status'),
-            'created_by' => Auth::id(),
-        ]);
+        try {
+            $this->authorize('create', Course::class);
+            
+            $course = Course::create([
+                'title' => $request->validated('title'),
+                'description' => $request->validated('description'),
+                'image' => $request->validated('image'),
+                'category_id' => $request->validated('category_id'),
+                'status' => $request->validated('status'),
+                'created_by' => Auth::id(),
+            ]);
 
-        Log::info('Course created successfully', [
-            'course_id' => $course->id,
-            'user_id' => Auth::id(),
-            'title' => $course->title
-        ]);
+            Log::info('Course created successfully', [
+                'course_id' => $course->id,
+                'user_id' => Auth::id(),
+                'title' => $course->title
+            ]);
 
-        return Redirect::route('courses.show', $course)
-            ->with('success', 'Course created successfully!');
+            return Redirect::route('courses.show', $course)
+                ->with('success', 'Course created successfully!');
+        } catch (AuthorizationException $e) {
+            abort(403, 'คุณไม่มีสิทธิ์สร้างหลักสูตร');
+        }
     }
 
     /**
@@ -153,9 +181,12 @@ class CourseController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Course $course): Response
+    public function edit($id): Response
     {
         try {
+            // Manual model loading instead of route model binding
+            $course = Course::findOrFail($id);
+            
             $this->authorize('update', $course);
             
             $categories = CourseCategory::active()->ordered()->get();
@@ -166,7 +197,7 @@ class CourseController extends Controller
             ]);
         } catch (Exception $e) {
             Log::error('Error in CourseController@edit', [
-                'course_id' => $course->id,
+                'course_id' => $id ?? 'unknown',
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -179,28 +210,45 @@ class CourseController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCourseRequest $request, Course $course)
+    public function update(UpdateCourseRequest $request, $id)
     {
-        $this->authorize('update', $course);
+        try {
+            // Manual model loading instead of route model binding
+            $course = Course::findOrFail($id);
+            
+            $this->authorize('update', $course);
 
-        $course->update($request->validated());
+            $course->update($request->validated());
 
-        Log::info('Course updated successfully', [
-            'course_id' => $course->id,
-            'user_id' => Auth::id(),
-            'title' => $course->title
-        ]);
+            Log::info('Course updated successfully', [
+                'course_id' => $course->id,
+                'user_id' => Auth::id(),
+                'title' => $course->title
+            ]);
 
-        return Redirect::route('courses.show', $course)
-            ->with('success', 'Course updated successfully!');
+            return Redirect::route('courses.show', $course)
+                ->with('success', 'Course updated successfully!');
+        } catch (Exception $e) {
+            Log::error('Error updating course', [
+                'course_id' => $id ?? 'unknown',
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            abort(500, 'เกิดข้อผิดพลาดในการอัปเดตหลักสูตร');
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Course $course)
+    public function destroy($id)
     {
         try {
+            // Manual model loading instead of route model binding
+            $course = Course::findOrFail($id);
+            
             $this->authorize('delete', $course);
 
             // Check if course has enrolled students
@@ -223,7 +271,7 @@ class CourseController extends Controller
 
         } catch (Exception $e) {
             Log::error('Error deleting course', [
-                'course_id' => $course->id,
+                'course_id' => $id ?? 'unknown',
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -237,9 +285,12 @@ class CourseController extends Controller
     /**
      * Enroll user in a course
      */
-    public function enroll(Course $course)
+    public function enroll($id)
     {
         try {
+            // Manual model loading instead of route model binding
+            $course = Course::findOrFail($id);
+            
             $user = Auth::user();
             
             // Check if user is already enrolled
@@ -250,8 +301,7 @@ class CourseController extends Controller
 
             // Check if course is published
             if (!$course->isPublished()) {
-                return redirect()->back()
-                    ->withErrors(['error' => 'ไม่สามารถลงทะเบียนหลักสูตรที่ยังไม่เผยแพร่ได้']);
+                abort(403, 'ไม่สามารถลงทะเบียนหลักสูตรที่ยังไม่เผยแพร่ได้');
             }
 
             $user->enrolledCourses()->attach($course->id, [
@@ -271,7 +321,7 @@ class CourseController extends Controller
         } catch (Exception $e) {
             Log::error('Error enrolling user in course', [
                 'user_id' => Auth::id(),
-                'course_id' => $course->id,
+                'course_id' => $id ?? 'unknown',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

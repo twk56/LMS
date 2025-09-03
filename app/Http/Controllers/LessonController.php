@@ -74,6 +74,8 @@ class LessonController extends Controller
      */
     public function create(Course $course): Response
     {
+        $this->authorize('create', Lesson::class);
+        
         return Inertia::render('lessons/create', [
             'course' => $course,
         ]);
@@ -94,6 +96,8 @@ class LessonController extends Controller
      */
     public function show(Lesson $lesson): Response
     {
+        $this->authorize('view', $lesson);
+        
         $course = $lesson->course;
         $lesson->load('course');
         
@@ -103,7 +107,13 @@ class LessonController extends Controller
         // Mark lesson as started for student
         $user = Auth::user();
         if ($user->role === 'student' && $lesson->isPublished()) {
-            $user->startLesson($lesson->id);
+            // Check if user has started this lesson
+            \App\Models\LessonProgress::firstOrCreate([
+                'user_id' => $user->id,
+                'lesson_id' => $lesson->id,
+            ], [
+                'started_at' => now(),
+            ]);
         }
 
         // Get user's progress for this lesson
@@ -124,6 +134,8 @@ class LessonController extends Controller
      */
     public function edit(Lesson $lesson): Response
     {
+        $this->authorize('update', $lesson);
+        
         $course = $lesson->course;
         return Inertia::render('lessons/edit', [
             'lesson' => $lesson,
@@ -136,6 +148,8 @@ class LessonController extends Controller
      */
     public function update(Request $request, Lesson $lesson)
     {
+        $this->authorize('update', $lesson);
+        
         $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
@@ -143,16 +157,15 @@ class LessonController extends Controller
             'order' => 'nullable|integer|min:0',
             'status' => 'required|in:draft,published',
             'youtube_url' => [
-    'nullable',
-    'url',
-    'regex:/^https:\/\/(www\.)?youtube\.com\/watch\?v=[a-zA-Z0-9_-]+$|^https:\/\/youtu\.be\/[a-zA-Z0-9_-]+$/'
-],
+                'nullable',
+                'url',
+                'regex:/^https:\/\/(www\.)?youtube\.com\/watch\?v=[a-zA-Z0-9_-]+$|^https:\/\/youtu\.be\/[a-zA-Z0-9_-]+$/'
+            ],
         ]);
 
         $lesson->update($request->only(['title', 'content', 'content_type', 'order', 'status', 'youtube_url']));
 
-        $course = $lesson->course;
-        return redirect()->route('courses.show', $course)->with('success', 'Lesson updated successfully!');
+        return redirect()->route('lessons.show', $lesson)->with('success', 'Lesson updated successfully!');
     }
 
     /**
@@ -160,10 +173,11 @@ class LessonController extends Controller
      */
     public function destroy(Lesson $lesson)
     {
-        $course = $lesson->course;
+        $this->authorize('delete', $lesson);
+        
         $lesson->delete();
 
-        return redirect()->route('courses.show', $course)->with('success', 'Lesson deleted successfully!');
+        return redirect()->route('lessons.index')->with('success', 'Lesson deleted successfully!');
     }
 
     /**
@@ -171,10 +185,26 @@ class LessonController extends Controller
      */
     public function complete(Course $course, Lesson $lesson)
     {
+        $this->authorize('view', $lesson);
+        
         $user = Auth::user();
         
         if ($user->role === 'student' && $lesson->isPublished()) {
-            $user->completeLesson($lesson->id);
+            // Check if user is enrolled in the course
+            if (!\Illuminate\Support\Facades\DB::table('course_user')
+                ->where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->exists()) {
+                return redirect()->back()->with('error', 'You must be enrolled in this course to complete lessons.');
+            }
+            
+            // Mark lesson as completed
+            \App\Models\LessonProgress::updateOrCreate([
+                'user_id' => $user->id,
+                'lesson_id' => $lesson->id,
+            ], [
+                'completed_at' => now(),
+            ]);
             return redirect()->back()->with('success', 'Lesson marked as completed!');
         }
 

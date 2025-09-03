@@ -44,5 +44,13 @@ export default defineConfig({
         hmr: {
             host: 'localhost',
         },
+        // เพิ่มการตั้งค่าเพื่อเพิ่มประสิทธิภาพ
+        watch: {
+            usePolling: false,
+        },
+    },
+    // เพิ่มการตั้งค่าเพื่อเพิ่มประสิทธิภาพ
+    define: {
+        __DEV__: process.env.NODE_ENV === 'development',
     },
 });

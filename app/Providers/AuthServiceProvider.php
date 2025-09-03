@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Course;
 use App\Models\CourseCategory;
+use App\Policies\CoursePolicy;
 use App\Policies\CourseCategoryPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -14,6 +16,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
+        Course::class => CoursePolicy::class,
         CourseCategory::class => CourseCategoryPolicy::class,
     ];
 

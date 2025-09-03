@@ -29,7 +29,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        patch('/profile', {
+        patch('/settings/profile', {
             preserveScroll: true,
             onError: (errors) => {
                 console.error('Profile update failed:', errors);
