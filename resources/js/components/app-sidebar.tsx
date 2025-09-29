@@ -14,8 +14,12 @@ import {
     MoreHorizontal,
     LogOut,
     User,
-    Lock,
-    Layers
+    Layers,
+    BarChart3,
+    MessageCircle,
+    Award,
+    Users,
+    BookMarked
 } from 'lucide-react';
 
 import AppLogo from './app-logo';
@@ -45,6 +49,7 @@ interface NavigationItem {
     badge?: string | number;
     description?: string;
     isAdminOnly?: boolean;
+    group?: string;
 }
 
 export function AppSidebar() {
@@ -114,7 +119,8 @@ export function AppSidebar() {
             name: 'หน้าหลัก',
             href: '/dashboard',
             icon: Home,
-            description: 'ภาพรวมและสถิติ'
+            description: 'ภาพรวมและสถิติ',
+            group: 'main'
         },
 
         // Learning Management
@@ -122,44 +128,128 @@ export function AppSidebar() {
             name: 'หลักสูตร',
             href: '/courses',
             icon: BookOpen,
-            description: 'จัดการหลักสูตรของคุณ'
+            description: 'จัดการหลักสูตรของคุณ',
+            group: 'learning'
         },
 
         {
             name: 'บทเรียน',
             href: '/lessons',
             icon: FileText,
-            description: 'เนื้อหาบทเรียนและสื่อการสอน'
+            description: 'เนื้อหาบทเรียนและสื่อการสอน',
+            group: 'learning'
         },
 
         {
             name: 'หมวดหมู่',
             href: '/categories',
             icon: Layers,
-            description: 'จัดการหมวดหมู่หลักสูตร'
+            description: 'จัดการหมวดหมู่หลักสูตร',
+            group: 'learning'
         },
 
-        // Communication
+        // Communication & Support
+        {
+            name: 'แชท',
+            href: '/simple-chat',
+            icon: MessageCircle,
+            description: 'ติดต่อ Admin ผ่านแชท',
+            group: 'communication'
+        },
+
         {
             name: 'การแจ้งเตือน',
             href: '/notifications',
             icon: Bell,
             badge: '3',
-            description: 'ข้อความจากระบบ'
+            description: 'ข้อความจากระบบ',
+            group: 'communication'
         },
+
+        // Student-specific features
+        ...(isAdmin ? [] : [
+            {
+                name: 'ความก้าวหน้า',
+                href: '/user-progress',
+                icon: BarChart3,
+                description: 'ติดตามความก้าวหน้าในการเรียน',
+                group: 'student'
+            },
+            {
+                name: 'หลักสูตรของฉัน',
+                href: '/my-courses',
+                icon: BookOpen,
+                description: 'หลักสูตรที่ลงทะเบียนแล้ว',
+                group: 'student'
+            },
+            {
+                name: 'ใบรับรอง',
+                href: '/certificates',
+                icon: Award,
+                description: 'ใบรับรองที่ได้รับ',
+                group: 'student'
+            }
+        ]),
+
+        // Admin-specific features
+        ...(isAdmin ? [
+            {
+                name: 'การวิเคราะห์',
+                href: '/analytics',
+                icon: BarChart3,
+                description: 'รายงานและสถิติ',
+                isAdminOnly: true,
+                group: 'admin'
+            },
+            {
+                name: 'จัดการผู้ใช้',
+                href: '/admin/users',
+                icon: Users,
+                description: 'จัดการบัญชีผู้ใช้',
+                isAdminOnly: true,
+                group: 'admin'
+            },
+            {
+                name: 'จัดการหลักสูตร',
+                href: '/admin/courses',
+                icon: BookMarked,
+                description: 'จัดการหลักสูตรทั้งหมด',
+                isAdminOnly: true,
+                group: 'admin'
+            },
+            {
+                name: 'จัดการหมวดหมู่',
+                href: '/admin/categories',
+                icon: Layers,
+                description: 'จัดการหมวดหมู่หลักสูตร',
+                isAdminOnly: true,
+                group: 'admin'
+            }
+        ] : []),
+
+        // Admin Only - Chat Management
+        ...(isAdmin ? [{
+            name: 'จัดการแชท',
+            href: '/simple-chat/admin',
+            icon: MessageCircle,
+            description: 'จัดการข้อความจากผู้ใช้',
+            isAdminOnly: true,
+            group: 'admin'
+        }] : []),
 
         // System & Settings
         {
             name: 'ตั้งค่า',
             href: '/settings/profile',
             icon: Settings,
-            description: 'การตั้งค่าระบบ'
+            description: 'การตั้งค่าระบบ',
+            group: 'system'
         }
-    ], []);
+    ], [isAdmin]);
 
-    // Filter items based on user role and search query
-    const filteredItems = useMemo(() => {
-        return navigationItems.filter(item => {
+    // Group and filter items based on user role and search query
+    const groupedItems = useMemo(() => {
+        const filtered = navigationItems.filter(item => {
             // Check role-based access
             if (item.isAdminOnly && !isAdmin) return false;
             
@@ -169,7 +259,28 @@ export function AppSidebar() {
             
             return !searchQuery || matchesSearch;
         });
+
+        // Group items by group property
+        const groups = filtered.reduce((acc, item) => {
+            const group = item.group || 'other';
+            if (!acc[group]) {
+                acc[group] = [];
+            }
+            acc[group].push(item);
+            return acc;
+        }, {} as Record<string, NavigationItem[]>);
+
+        return groups;
     }, [navigationItems, isAdmin, searchQuery]);
+
+    const groupLabels = {
+        main: 'หน้าหลัก',
+        learning: 'การเรียน',
+        communication: 'การสื่อสาร',
+        student: 'สำหรับผู้เรียน',
+        admin: 'สำหรับผู้ดูแล',
+        system: 'ระบบ'
+    };
 
     const handleLogout = useCallback(async () => {
         try {
@@ -217,11 +328,11 @@ export function AppSidebar() {
                 className={cn(
                     "flex-shrink-0 h-screen transition-all duration-300 ease-in-out overflow-hidden",
                     isCollapsed ? "w-20" : "w-64",
-                    "lg:relative lg:translate-x-0", // Desktop: always visible
-                    "fixed top-0 left-0 z-40", // Mobile: fixed positioning
-                    "transform transition-transform duration-300", // Mobile: transform
-                    isMobileOpen ? "translate-x-0" : "-translate-x-full", // Mobile: show/hide
-                    "lg:transform-none" // Desktop: no transform
+                    "lg:relative lg:translate-x-0", 
+                    "fixed top-0 left-0 z-40", 
+                    "transform transition-transform duration-300", 
+                    isMobileOpen ? "translate-x-0" : "-translate-x-full", 
+                    "lg:transform-none" 
                 )}
             >
             <div className="flex h-full flex-col bg-gradient-to-b from-sidebar via-sidebar to-sidebar/95 border-r border-sidebar-border/50 backdrop-blur-sm">
@@ -272,73 +383,89 @@ export function AppSidebar() {
                 )}
 
                 {/* Navigation */}
-                <nav className="flex-1 overflow-y-auto p-4 space-y-2" role="navigation" aria-label="เมนูหลัก">
-                    {filteredItems.length === 0 ? (
+                <nav className="flex-1 overflow-y-auto p-4 space-y-6" role="navigation" aria-label="เมนูหลัก">
+                    {Object.keys(groupedItems).length === 0 ? (
                         <div className="text-center py-4">
                             <p className="text-sm text-muted-foreground">ไม่พบเมนูที่ค้นหา</p>
                         </div>
                     ) : (
-                        filteredItems.map((item) => {
-                            const Icon = item.icon;
-                            const isHovered = hoveredItem === item.name;
-                            
-                            return (
-                                <div key={item.name} className="relative">
-                                    <Link href={item.href}>
-                                        <div
-                                            onMouseEnter={() => handleItemHover(item.name)}
-                                            onMouseLeave={() => handleItemHover(null)}
-                                            className={cn(
-                                                "group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out cursor-pointer",
-                                                "hover:bg-gradient-to-r hover:from-sidebar-accent/50 hover:to-sidebar-accent/30",
-                                                "hover:shadow-lg hover:shadow-sidebar-accent/20",
-                                                "focus:outline-none focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2",
-                                                isCollapsed ? "justify-center" : "justify-start",
-                                                isHovered && "scale-105 transform"
-                                            )}
-                                            role="menuitem"
-                                            aria-label={item.description ? `${item.name} - ${item.description}` : item.name}
-                                        >
-                                            {/* Icon */}
-                                            <div className={cn(
-                                                "relative transition-all duration-300 ease-out",
-                                                isCollapsed ? "mr-0" : "mr-3"
-                                            )}>
-                                                <div className={cn(
-                                                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300",
-                                                    isHovered 
-                                                        ? "bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg" 
-                                                        : "bg-sidebar-accent/30 text-sidebar-accent-foreground"
-                                                )}>
-                                                    <Icon className="h-4 w-4" />
-                                                </div>
-                                                {isHovered && !isCollapsed && (
-                                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
-                                                )}
-                                            </div>
+                        Object.entries(groupedItems).map(([groupKey, items]) => (
+                            <div key={groupKey} className="space-y-2">
+                                {/* Group Label */}
+                                {!isCollapsed && groupLabels[groupKey as keyof typeof groupLabels] && (
+                                    <div className="px-3 py-2">
+                                        <h3 className="text-xs font-semibold text-sidebar-muted-foreground uppercase tracking-wider">
+                                            {groupLabels[groupKey as keyof typeof groupLabels]}
+                                        </h3>
+                                    </div>
+                                )}
+                                
+                                {/* Group Items */}
+                                <div className="space-y-1">
+                                    {items.map((item) => {
+                                        const Icon = item.icon;
+                                        const isHovered = hoveredItem === item.name;
+                                        
+                                        return (
+                                            <div key={item.name} className="relative">
+                                                <Link href={item.href}>
+                                                    <div
+                                                        onMouseEnter={() => handleItemHover(item.name)}
+                                                        onMouseLeave={() => handleItemHover(null)}
+                                                        className={cn(
+                                                            "group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out cursor-pointer",
+                                                            "hover:bg-gradient-to-r hover:from-sidebar-accent/50 hover:to-sidebar-accent/30",
+                                                            "hover:shadow-lg hover:shadow-sidebar-accent/20",
+                                                            "focus:outline-none focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2",
+                                                            isCollapsed ? "justify-center" : "justify-start",
+                                                            isHovered && "scale-105 transform"
+                                                        )}
+                                                        role="menuitem"
+                                                        aria-label={item.description ? `${item.name} - ${item.description}` : item.name}
+                                                    >
+                                                        {/* Icon */}
+                                                        <div className={cn(
+                                                            "relative transition-all duration-300 ease-out",
+                                                            isCollapsed ? "mr-0" : "mr-3"
+                                                        )}>
+                                                            <div className={cn(
+                                                                "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300",
+                                                                isHovered 
+                                                                    ? "bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg" 
+                                                                    : "bg-sidebar-accent/30 text-sidebar-accent-foreground"
+                                                            )}>
+                                                                <Icon className="h-4 w-4" />
+                                                            </div>
+                                                            {isHovered && !isCollapsed && (
+                                                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
+                                                            )}
+                                                        </div>
 
-                                            {!isCollapsed && (
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium">{item.name}</span>
-                                                        {item.badge && (
-                                                            <Badge className="ml-2 bg-primary text-primary-foreground text-xs" aria-label={`${item.badge} รายการใหม่`}>
-                                                                {item.badge}
-                                                            </Badge>
+                                                        {!isCollapsed && (
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="font-medium">{item.name}</span>
+                                                                    {item.badge && (
+                                                                        <Badge className="ml-2 bg-primary text-primary-foreground text-xs" aria-label={`${item.badge} รายการใหม่`}>
+                                                                            {item.badge}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                {item.description && (
+                                                                    <p className="text-xs text-sidebar-muted-foreground mt-1 line-clamp-1">
+                                                                        {item.description}
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {item.description && (
-                                                        <p className="text-xs text-sidebar-muted-foreground mt-1 line-clamp-1">
-                                                            {item.description}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </Link>
+                                                </Link>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })
+                            </div>
+                        ))
                     )}
                 </nav>
 

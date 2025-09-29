@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -23,6 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'avatar',
         'email_verified_at',
     ];
 
@@ -76,9 +78,28 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get courses enrolled by this user (for student)
      */
-    public function enrolledCourses()
+    public function enrolledCourses(): BelongsToMany
     {
         return $this->belongsToMany(Course::class, 'course_user')
+                    ->withPivot('status', 'completed_at', 'enrolled_at')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Alias for enrolledCourses for backward compatibility
+     */
+    public function courses(): BelongsToMany
+    {
+        return $this->enrolledCourses();
+    }
+
+    /**
+     * Get completed courses for this user
+     */
+    public function completedCourses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'course_user')
+                    ->wherePivot('status', 'completed')
                     ->withPivot('status', 'completed_at', 'enrolled_at')
                     ->withTimestamps();
     }
@@ -96,36 +117,23 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Certificate::class);
     }
 
-    public function quizAttempts(): HasMany
-    {
-        return $this->hasMany(QuizAttempt::class);
-    }
 
     /**
-     * Get chat rooms where this user is a participant
-     */
-    public function chatRooms()
-    {
-        return $this->belongsToMany(ChatRoom::class, 'chat_room_participants')
-                    ->withPivot('role', 'is_active', 'last_seen_at', 'joined_at')
-                    ->withTimestamps();
-    }
-
-    /**
-     * Get chat messages sent by this user
+     * Get the user's chat messages
      */
     public function chatMessages(): HasMany
     {
-        return $this->hasMany(ChatMessage::class);
+        return $this->hasMany(SimpleChatMessage::class);
     }
 
     /**
-     * Get the user's appearance settings.
+     * Get the admin's chat messages
      */
-    public function appearanceSetting()
+    public function adminChatMessages(): HasMany
     {
-        return $this->hasOne(AppearanceSetting::class);
+        return $this->hasMany(SimpleChatMessage::class, 'admin_id');
     }
+
 
     /**
      * Get progress for a specific lesson

@@ -18,13 +18,71 @@ class SecurityTest extends TestCase
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('X-XSS-Protection', '1; mode=block');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        $response->assertHeader('Content-Security-Policy');
+        $response->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), unload=()');
+        
+        // Test CSP header exists and contains expected directives
+        $csp = $response->headers->get('Content-Security-Policy');
+        $this->assertNotNull($csp);
+        $this->assertStringContainsString("default-src 'self'", $csp);
+        $this->assertStringContainsString("style-src 'self' 'unsafe-inline' https://fonts.bunny.net", $csp);
+        $this->assertStringContainsString("font-src 'self' https://fonts.bunny.net", $csp);
+    }
+
+    public function test_csp_allows_fonts_bunny_net(): void
+    {
+        $response = $this->get('/');
+        $csp = $response->headers->get('Content-Security-Policy');
+        
+        $this->assertStringContainsString("https://fonts.bunny.net", $csp);
+    }
+
+    public function test_csp_development_environment(): void
+    {
+        // Test in local environment
+        app()->detectEnvironment(function () {
+            return 'local';
+        });
+        
+        $response = $this->get('/');
+        $csp = $response->headers->get('Content-Security-Policy');
+        
+        // Should include localhost:5173 for Vite development
+        $this->assertStringContainsString("http://localhost:5173", $csp);
+        $this->assertStringContainsString("ws://localhost:5173", $csp);
+    }
+
+    public function test_csp_allows_pusher_connections(): void
+    {
+        $response = $this->get('/');
+        $csp = $response->headers->get('Content-Security-Policy');
+        
+        // Should include Pusher domains
+        $this->assertStringContainsString("https://*.pusher.com", $csp);
+        $this->assertStringContainsString("https://*.pusherapp.com", $csp);
+        $this->assertStringContainsString("wss://*.pusher.com", $csp);
+        $this->assertStringContainsString("wss://*.pusherapp.com", $csp);
+    }
+
+    public function test_csp_allows_youtube_iframes(): void
+    {
+        $response = $this->get('/');
+        $csp = $response->headers->get('Content-Security-Policy');
+        
+        // Should include YouTube domains for iframe embedding
+        $this->assertStringContainsString("frame-src 'self' https://www.youtube.com https://youtube.com", $csp);
+    }
+
+    public function test_permissions_policy_includes_unload(): void
+    {
+        $response = $this->get('/');
+        
+        $response->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), unload=()');
     }
 
     public function test_csrf_protection_is_enabled(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
+        $category = \App\Models\CourseCategory::factory()->create();
 
         // Temporarily enable CSRF for this test
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
@@ -33,7 +91,9 @@ class SecurityTest extends TestCase
         $response = $this->actingAs($user)->post('/courses', [
             'title' => 'Test Course',
             'description' => 'Test Description',
-            'status' => 'draft', // Missing required field
+            'category_option' => 'existing',
+            'category_id' => $category->id,
+            'status' => 'draft',
         ]);
 
         // Check if CSRF error occurs or if validation passes
@@ -51,12 +111,15 @@ class SecurityTest extends TestCase
     public function test_rate_limiting_on_api_endpoints(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
+        $category = \App\Models\CourseCategory::factory()->create();
 
         // Make multiple requests to trigger rate limiting
         for ($i = 0; $i < 100; $i++) {
             $response = $this->actingAs($user)->post('/courses', [
                 'title' => 'Test Course ' . $i,
                 'description' => 'Test Description',
+                'category_option' => 'existing',
+                'category_id' => $category->id,
                 'status' => 'draft',
             ]);
         }
@@ -88,8 +151,9 @@ class SecurityTest extends TestCase
         $response = $this->actingAs($user)->post('/courses', [
             'title' => '<script>alert("xss")</script>',
             'description' => 'Test Description',
-            'status' => 'published',
+            'category_option' => 'existing',
             'category_id' => 999, // Non-existent category
+            'status' => 'published',
         ]);
 
         // Should get validation error for non-existent category
@@ -100,10 +164,13 @@ class SecurityTest extends TestCase
     public function test_file_upload_validation(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
+        $category = \App\Models\CourseCategory::factory()->create();
 
         $response = $this->actingAs($user)->post('/courses', [
             'title' => 'Test Course',
             'description' => 'Test Description',
+            'category_option' => 'existing',
+            'category_id' => $category->id,
             'status' => 'draft',
             'image' => 'not_a_file', // Invalid image format
         ]);
@@ -175,8 +242,9 @@ class SecurityTest extends TestCase
         $response = $this->actingAs($user)->get('/dashboard');
         $response->assertStatus(200);
 
-        // Create a new test instance to simulate fresh session
-        $this->refreshApplication();
+        // Test session regeneration
+        $response = $this->actingAs($user)->post('/logout');
+        $response->assertRedirect('/');
         
         // Test with a fresh request without authentication
         $response = $this->get('/dashboard');

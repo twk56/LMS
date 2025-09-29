@@ -73,28 +73,28 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
 
   const testimonials = [
     {
-      quote: "ระบบ LMS ที่ใช้งานง่าย ช่วยให้การสอนมีประสิทธิภาพมากขึ้น และนักเรียนเข้าใจบทเรียนได้ดีขึ้น",
-      author: "อาจารย์ดร.สมชาย วิทยากร",
-      role: "อาจารย์มหาวิทยาลัย",
-      avatar: "👨‍🏫"
+      quote: "ระบบจัดการหลักสูตรที่ใช้งานง่าย ช่วยให้การสร้างและจัดการบทเรียนมีประสิทธิภาพมากขึ้น",
+      author: "ผู้ดูแลระบบ",
+      role: "Administrator",
+      avatar: "👨‍💻"
     },
     {
       quote: "สามารถเรียนรู้ได้ทุกที่ทุกเวลา ระบบมีเสถียรภาพสูง และติดตามความก้าวหน้าได้ง่าย",
-      author: "น.ส.สุดา นักเรียน",
-      role: "นักศึกษาปริญญาตรี",
+      author: "ผู้เรียน",
+      role: "Student",
       avatar: "👩‍🎓"
     },
     {
-      quote: "การจัดการหลักสูตรและการติดตามผลการเรียนของนักเรียนทำได้อย่างมีระบบและครบถ้วน",
-      author: "คุณสมศักดิ์ ผู้อำนวยการ",
-      role: "ผู้บริหารสถาบันการศึกษา",
-      avatar: "👨‍💼"
+      quote: "การวิเคราะห์และรายงานผลการเรียนทำได้อย่างละเอียด ช่วยให้เข้าใจพฤติกรรมการเรียนได้ดีขึ้น",
+      author: "ผู้สอน",
+      role: "Instructor",
+      avatar: "👨‍🏫"
     }
   ];
 
   return (
     <>
-      <Head title="ยินดีต้อนรับ - Learning Management System" />
+      <Head title="ยินดีต้อนรับ - Laravel Learning Management System" />
       
       {/* Creative Hero Section with Interactive Elements */}
       <div className="min-h-screen bg-black relative overflow-hidden">
@@ -141,7 +141,7 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
               </div>
               <div>
                 <span className="text-2xl font-bold text-white">LMS</span>
-                <span className="block text-sm text-gray-300">Creative Learning</span>
+                <span className="block text-sm text-gray-300">Laravel Learning Management System</span>
               </div>
             </div>
             
@@ -230,10 +230,10 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                 {/* Creative Stats */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-4xl mx-auto">
                   {[
-                    { number: "2.5K+", label: "ผู้เรียน", icon: Heart, color: "from-pink-500 to-rose-500" },
-                    { number: "150+", label: "หลักสูตร", icon: Lightbulb, color: "from-yellow-500 to-orange-500" },
-                    { number: "98%", label: "ความพึงพอใจ", icon: Star, color: "from-purple-500 to-indigo-500" },
-                    { number: "24/7", label: "ช่วยเหลือ", icon: Coffee, color: "from-blue-500 to-cyan-500" }
+                    { number: "6", label: "ผู้เรียน", icon: Heart, color: "from-pink-500 to-rose-500" },
+                    { number: "4", label: "หลักสูตร", icon: Lightbulb, color: "from-yellow-500 to-orange-500" },
+                    { number: "6", label: "บทเรียน", icon: BookOpen, color: "from-purple-500 to-indigo-500" },
+                    { number: "4", label: "หมวดหมู่", icon: Layers, color: "from-blue-500 to-cyan-500" }
                   ].map((stat, index) => (
                     <div key={index} className="text-center group" style={{animationDelay: `${index * 0.1}s`}}>
                       <div className={`w-16 h-16 mx-auto mb-4 bg-gradient-to-br ${stat.color} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-xl`}>
@@ -273,25 +273,25 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
           <div className="grid lg:grid-cols-3 gap-8">
             {[
               {
-                title: "การเรียนรู้แบบโต้ตอบ",
-                description: "ระบบการเรียนรู้ที่มีปฏิสัมพันธ์สูง เพิ่มความเข้าใจและความสนใจ",
-                icon: MousePointer,
+                title: "ระบบจัดการหลักสูตร",
+                description: "สร้าง จัดการ และติดตามหลักสูตร พร้อมระบบหมวดหมู่และบทเรียน",
+                icon: BookOpen,
                 color: "from-purple-500 to-pink-500",
-                features: ["บทเรียนแบบโต้ตอบ", "ระบบเกมมิฟิเคชัน", "ข้อเสนอแนะแบบทันที"]
+                features: ["สร้างหลักสูตร", "จัดการบทเรียน", "ระบบหมวดหมู่", "ไฟล์ประกอบ"]
               },
               {
-                title: "จัดการหลักสูตร",
-                description: "เครื่องมือสำหรับสร้าง จัดการ และติดตามหลักสูตรอย่างมีประสิทธิภาพ",
-                icon: Palette,
+                title: "ระบบแชทและแจ้งเตือน",
+                description: "การสื่อสารระหว่างผู้เรียนและผู้สอน พร้อมระบบแจ้งเตือนแบบเรียลไทม์",
+                icon: Bell,
                 color: "from-pink-500 to-yellow-500",
-                features: ["สร้างบทเรียน", "จัดการเนื้อหา", "แบ่งปันทรัพยากร"]
+                features: ["แชทส่วนตัว", "แจ้งเตือน", "การตอบกลับ", "ประวัติการสนทนา"]
               },
               {
-                title: "วิเคราะห์และรายงาน",
-                description: "ระบบติดตามและวิเคราะห์ผลการเรียนรู้แบบละเอียดและแม่นยำ",
-                icon: Brain,
+                title: "วิเคราะห์และติดตามผล",
+                description: "ระบบติดตามความก้าวหน้าและวิเคราะห์ผลการเรียนแบบละเอียด",
+                icon: BarChart3,
                 color: "from-blue-500 to-purple-500",
-                features: ["รายงานความก้าวหน้า", "การวิเคราะห์ผลการเรียน", "แนะนำเส้นทางการเรียน"]
+                features: ["ติดตามความก้าวหน้า", "รายงานการเรียน", "สถิติผู้เรียน", "แดชบอร์ด"]
               }
             ].map((service, index) => (
               <div
@@ -329,14 +329,70 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
         </div>
           </div>
 
+      {/* Additional Features Section */}
+      <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900 py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+              ฟีเจอร์
+              <span className="block bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                เพิ่มเติม
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              เครื่องมือเสริมที่ช่วยให้การเรียนรู้น่าสนใจและมีประสิทธิภาพมากขึ้น
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                title: "ระบบใบรับรอง",
+                description: "ออกใบรับรองเมื่อเรียนจบหลักสูตร",
+                icon: Award,
+                color: "from-yellow-500 to-orange-500"
+              },
+              {
+                title: "การตั้งค่าการแสดงผล",
+                description: "ปรับแต่งธีมและสีสันตามความชอบ",
+                icon: Palette,
+                color: "from-pink-500 to-rose-500"
+              },
+              {
+                title: "ระบบผู้ใช้",
+                description: "จัดการผู้เรียนและผู้สอนอย่างมีระบบ",
+                icon: Users,
+                color: "from-blue-500 to-cyan-500"
+              },
+              {
+                title: "API Documentation",
+                description: "เอกสาร API ครบถ้วนสำหรับนักพัฒนา",
+                icon: Code,
+                color: "from-green-500 to-emerald-500"
+              }
+            ].map((feature, index) => (
+              <div key={index} className="group">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 h-full hover:bg-white/20 transition-all duration-300 group-hover:scale-105">
+                  <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <feature.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+                  <p className="text-gray-300 text-sm">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Testimonials Carousel */}
       <div className="bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
-              What Our
+              ความคิดเห็น
               <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Creators Say
+                จากผู้ใช้
               </span>
             </h2>
           </div>
@@ -386,7 +442,7 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
             <div className="mb-8">
               <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-500/30 rounded-full px-6 py-3 mb-8">
                 <Rocket className="h-5 w-5 text-purple-400" />
-                <span className="text-purple-300 font-medium">Ready to Create?</span>
+                <span className="text-purple-300 font-medium">พร้อมเริ่มต้นแล้วหรือยัง?</span>
               </div>
             </div>
             
@@ -437,7 +493,7 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
               )}
           </div>
 
-            {/* Tech Stack Minimal */}
+            {/* Tech Stack */}
             <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400">
               <span className="bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
                 Laravel {laravelVersion}
@@ -446,10 +502,13 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                 PHP {phpVersion}
               </span>
               <span className="bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                React 19
+                React + TypeScript
               </span>
               <span className="bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                TypeScript
+                Inertia.js
+              </span>
+              <span className="bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
+                Tailwind CSS
               </span>
             </div>
           </div>
@@ -475,7 +534,7 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
                 </div>
                 <div>
                   <span className="text-2xl font-bold text-white">LMS</span>
-                  <span className="block text-sm text-gray-300">Creative Learning</span>
+                  <span className="block text-sm text-gray-300">Laravel Learning Management System</span>
                 </div>
               </div>
               <p className="text-gray-300 leading-relaxed max-w-md">
@@ -486,9 +545,9 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
             
             {/* Quick Links */}
             <div>
-              <h3 className="text-white font-semibold mb-4">Quick Links</h3>
+              <h3 className="text-white font-semibold mb-4">ลิงก์ด่วน</h3>
               <ul className="space-y-3">
-                {['หลักสูตร', 'เกี่ยวกับเรา', 'ติดต่อเรา', 'ช่วยเหลือ'].map((link, index) => (
+                {['หลักสูตร', 'บทเรียน', 'แดชบอร์ด', 'การตั้งค่า'].map((link, index) => (
                   <li key={index}>
                     <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center space-x-2 group">
                       <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
@@ -505,15 +564,15 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 text-gray-400">
                   <Globe className="h-4 w-4" />
-                  <span>www.creativelms.com</span>
+                  <span>localhost:8000</span>
                 </div>
                 <div className="flex items-center space-x-3 text-gray-400">
                   <Headphones className="h-4 w-4" />
-                  <span>support@creativelms.com</span>
+                  <span>support@lms.local</span>
                 </div>
                 <div className="flex items-center space-x-3 text-gray-400">
                   <Smartphone className="h-4 w-4" />
-                  <span>+66 2 xxx xxxx</span>
+                  <span>Laravel Learning Management System</span>
                 </div>
               </div>
             </div>
@@ -521,10 +580,10 @@ export default function Welcome({ canLogin, canRegister, laravelVersion, phpVers
           
           <div className="border-t border-white/10 pt-8 text-center">
             <p className="text-gray-400">
-              © 2024 Creative Learning Management System. All rights reserved.
+              © 2024 Laravel Learning Management System. All rights reserved.
             </p>
             <p className="text-gray-500 text-sm mt-2">
-              Made with <Heart className="inline h-4 w-4 text-red-400 mx-1" /> for creative learners
+              Made with <Heart className="inline h-4 w-4 text-red-400 mx-1" /> for learners
             </p>
           </div>
         </div>

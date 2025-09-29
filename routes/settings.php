@@ -10,8 +10,12 @@ Route::middleware('auth')->group(function () {
     Route::redirect('settings', '/settings/profile');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::patch('settings/profile', [ProfileController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('profile.update');
+    Route::delete('settings/profile', [ProfileController::class, 'destroy'])
+        ->middleware('throttle:3,1')
+        ->name('profile.destroy');
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
 
@@ -20,5 +24,7 @@ Route::middleware('auth')->group(function () {
         ->name('password.update');
 
     Route::get('settings/appearance', [AppearanceController::class, 'edit'])->name('appearance.edit');
-    Route::patch('settings/appearance', [AppearanceController::class, 'update'])->name('appearance.update');
+    Route::patch('settings/appearance', [AppearanceController::class, 'update'])
+        ->middleware('throttle:20,1')
+        ->name('appearance.update');
 });

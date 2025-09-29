@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Eye, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import TextLink from '@/components/text-link';
 
 interface Course {
@@ -30,6 +31,8 @@ interface Props {
 }
 
 export default function LessonsEdit({ course, lesson }: Props) {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
   const { data, setData, put, processing, errors } = useForm({
     title: lesson.title,
     content: lesson.content,
@@ -41,9 +44,25 @@ export default function LessonsEdit({ course, lesson }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null); // Clear previous errors
+    
     put(`/lessons/${lesson.id}`, {
         onError: (errors) => {
             console.error('Lesson update failed:', errors);
+            // Log detailed error information
+            if (typeof errors === 'object' && errors !== null) {
+                Object.keys(errors).forEach(key => {
+                    console.error(`Field ${key}:`, errors[key]);
+                });
+                // Set a general error message
+                setSubmitError('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาตรวจสอบข้อมูลที่กรอก');
+            } else {
+                setSubmitError('เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ');
+            }
+        },
+        onSuccess: () => {
+            console.log('Lesson updated successfully');
+            setSubmitError(null);
         }
     });
   };
@@ -81,6 +100,15 @@ export default function LessonsEdit({ course, lesson }: Props) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {submitError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {submitError}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <Card>
               <CardHeader>
                 <CardTitle>ข้อมูลบทเรียน</CardTitle>

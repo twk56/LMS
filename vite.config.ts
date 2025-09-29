@@ -9,6 +9,7 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
+            buildDirectory: 'build',
         }),
         react(),
     ],
@@ -24,7 +25,8 @@ export default defineConfig({
         target: 'esnext',
         minify: 'esbuild',
         sourcemap: false,
-        manifest: true,
+        manifest: 'manifest.json',
+        outDir: 'public/build',
         rollupOptions: {
             output: {
                 manualChunks: {

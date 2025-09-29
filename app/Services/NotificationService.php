@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Course;
 use App\Models\Lesson;
-use App\Models\Quiz;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
@@ -44,23 +43,6 @@ class NotificationService
         $this->logNotification($notification);
     }
 
-    public function sendQuizReminderNotification(User $user, Quiz $quiz): void
-    {
-        $notification = [
-            'type' => 'quiz_reminder',
-            'title' => 'Quiz Available! 📝',
-            'message' => "A new quiz '{$quiz->title}' is available for you to take",
-            'user_id' => $user->id,
-            'quiz_id' => $quiz->id,
-            'lesson_id' => $quiz->lesson->id,
-            'course_id' => $quiz->lesson->course->id,
-            'timestamp' => now(),
-            'priority' => 'medium',
-        ];
-
-        $this->sendNotification($user, $notification);
-        $this->logNotification($notification);
-    }
 
     public function sendAchievementNotification(User $user, string $achievement): void
     {
@@ -182,25 +164,88 @@ class NotificationService
         ];
     }
 
-    public function markNotificationAsRead(User $user, int $notificationId): bool
+    public function markNotificationAsRead(User $user, mixed $notificationId): bool
     {
-        // Simulate marking notification as read
-        Log::info("Notification {$notificationId} marked as read for user {$user->id}");
-        return true;
+        try {
+            if (!$user) {
+                Log::error('NotificationService::markNotificationAsRead: User is null');
+                return false;
+            }
+
+            if (!$notificationId || $notificationId <= 0) {
+                Log::error('NotificationService::markNotificationAsRead: Invalid notification ID', [
+                    'user_id' => $user->id,
+                    'notification_id' => $notificationId
+                ]);
+                return false;
+            }
+
+            // Simulate marking notification as read
+            Log::info("Notification {$notificationId} marked as read for user {$user->id}");
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('NotificationService::markNotificationAsRead: Error', [
+                'user_id' => $user?->id,
+                'notification_id' => $notificationId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
     }
 
     public function markAllNotificationsAsRead(User $user): bool
     {
-        // Simulate marking all notifications as read
-        Log::info("All notifications marked as read for user {$user->id}");
-        return true;
+        try {
+            if (!$user) {
+                Log::error('NotificationService::markAllNotificationsAsRead: User is null');
+                return false;
+            }
+
+            // Simulate marking all notifications as read
+            Log::info("All notifications marked as read for user {$user->id}");
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('NotificationService::markAllNotificationsAsRead: Error', [
+                'user_id' => $user?->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
     }
 
-    public function deleteNotification(User $user, int $notificationId): bool
+    public function deleteNotification(User $user, mixed $notificationId): bool
     {
-        // Simulate deleting notification
-        Log::info("Notification {$notificationId} deleted for user {$user->id}");
-        return true;
+        try {
+            if (!$user) {
+                Log::error('NotificationService::deleteNotification: User is null');
+                return false;
+            }
+
+            if (!$notificationId || $notificationId <= 0) {
+                Log::error('NotificationService::deleteNotification: Invalid notification ID', [
+                    'user_id' => $user->id,
+                    'notification_id' => $notificationId
+                ]);
+                return false;
+            }
+
+            // Simulate deleting notification
+            Log::info("Notification {$notificationId} deleted for user {$user->id}");
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('NotificationService::deleteNotification: Error', [
+                'user_id' => $user?->id,
+                'notification_id' => $notificationId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
     }
 
     public function getNotificationPreferences(User $user): array
@@ -211,7 +256,6 @@ class NotificationService
             'sms_notifications' => false,
             'course_completion' => true,
             'lesson_reminders' => true,
-            'quiz_reminders' => true,
             'achievements' => true,
             'streaks' => true,
             'dropout_risk' => true,

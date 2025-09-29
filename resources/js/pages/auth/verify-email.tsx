@@ -2,15 +2,19 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 
-import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     const { post, processing } = useForm();
+    const { post: logoutPost, processing: logoutProcessing } = useForm();
 
     const handleResend = () => {
         post(route('verification.send'));
+    };
+
+    const handleLogout = () => {
+        logoutPost(route('logout'));
     };
 
     return (
@@ -30,9 +34,15 @@ export default function VerifyEmail({ status }: { status?: string }) {
                             Resend verification email
                         </Button>
 
-                        <TextLink href={route('logout')} method="post" className="mx-auto block text-sm">
+                        <Button 
+                            variant="ghost" 
+                            className="mx-auto block text-sm"
+                            onClick={handleLogout}
+                            disabled={logoutProcessing}
+                        >
+                            {logoutProcessing && <LoaderCircle className="h-4 w-4 animate-spin mr-2" />}
                             Log out
-                        </TextLink>
+                        </Button>
                     </>
             </div>
         </AuthLayout>

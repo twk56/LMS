@@ -27,12 +27,13 @@ return [
         'metrics',
     ],
     
-    'before_send' => function (\Sentry\Event $event): ?\Sentry\Event {
-        // Filter out sensitive data
-        if (isset($event->getUser()['email'])) {
-            $event->getUser()['email'] = '***@***.***';
-        }
-        
-        return $event;
-    },
+    // Commented out to fix configuration cache issue
+    // 'before_send' => function (\Sentry\Event $event): ?\Sentry\Event {
+    //     // Filter out sensitive data
+    //     if (isset($event->getUser()['email'])) {
+    //         $event->getUser()['email'] = '***@***.***';
+    //     }
+    //     
+    //     return $event;
+    // },
 ];

@@ -1,92 +1,121 @@
+import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Bell, Save, ArrowLeft } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
+import { Bell, ArrowLeft, Save } from 'lucide-react';
+import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Link } from '@inertiajs/react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import AppLayout from '@/layouts/app-layout';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'การแจ้งเตือน',
+        href: '/notifications',
+    },
+    {
+        title: 'ตั้งค่า',
+        href: '/notifications/preferences',
+    },
+];
 
 interface NotificationPreferences {
     email_notifications: boolean;
     push_notifications: boolean;
-    course_updates: boolean;
-    lesson_completions: boolean;
-    system_announcements: boolean;
-    frequency: 'immediate' | 'daily' | 'weekly';
+    sms_notifications: boolean;
+    course_completion: boolean;
+    lesson_reminders: boolean;
+    quiz_reminders: boolean;
+    achievements: boolean;
+    streaks: boolean;
+    dropout_risk: boolean;
+    new_courses: boolean;
+    system_maintenance: boolean;
 }
 
-interface PageProps {
-    preferences?: NotificationPreferences;
+interface Props {
+    preferences: NotificationPreferences;
+    error?: string;
 }
 
-const defaultPreferences: NotificationPreferences = {
-    email_notifications: true,
-    push_notifications: true,
-    course_updates: true,
-    lesson_completions: true,
-    system_announcements: true,
-    frequency: 'immediate',
-};
+export default function NotificationPreferences({ preferences, error }: Props) {
+    const [isLoading, setIsLoading] = useState(false);
 
-export default function NotificationsPreferences({ preferences = defaultPreferences }: PageProps) {
-    const form = useForm<NotificationPreferences>({
+    const form = useForm({
         email_notifications: preferences.email_notifications,
         push_notifications: preferences.push_notifications,
-        course_updates: preferences.course_updates,
-        lesson_completions: preferences.lesson_completions,
-        system_announcements: preferences.system_announcements,
-        frequency: preferences.frequency,
+        sms_notifications: preferences.sms_notifications,
+        course_completion: preferences.course_completion,
+        lesson_reminders: preferences.lesson_reminders,
+        quiz_reminders: preferences.quiz_reminders,
+        achievements: preferences.achievements,
+        streaks: preferences.streaks,
+        dropout_risk: preferences.dropout_risk,
+        new_courses: preferences.new_courses,
+        system_maintenance: preferences.system_maintenance,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        form.post('/notifications/update-preferences', { 
-            preserveScroll: true,
-            onError: (errors) => {
-                console.error('Error updating preferences:', errors);
-            }
+        setIsLoading(true);
+        form.put(route('notifications.update-preferences'), {
+            onSuccess: () => {
+                setIsLoading(false);
+            },
+            onError: () => {
+                setIsLoading(false);
+            },
         });
     };
 
+    const handleToggle = (field: keyof NotificationPreferences) => {
+        form.setData(field, !form.data[field]);
+    };
+
     return (
-        <AppLayout>
-            <Head title="การตั้งค่าการแจ้งเตือน" />
-            
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="ตั้งค่าการแจ้งเตือน" />
+
             <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" size="sm" onClick={() => window.history.back()}>
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        กลับ
+                    </Button>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">การตั้งค่าการแจ้งเตือน</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">ตั้งค่าการแจ้งเตือน</h1>
                         <p className="text-muted-foreground">
-                            ปรับแต่งวิธีการและเวลาที่คุณต้องการรับการแจ้งเตือน
+                            จัดการการตั้งค่าการแจ้งเตือนของคุณ
                         </p>
                     </div>
-                    <Button variant="outline" asChild>
-                        <Link href="/notifications">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            กลับไปการแจ้งเตือน
-                        </Link>
-                    </Button>
                 </div>
 
+                {error && (
+                    <Alert className="border-red-200 bg-red-50">
+                        <AlertDescription className="text-red-800">
+                            {error}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* General Settings */}
+                    {/* General Notifications */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center space-x-2">
+                            <CardTitle className="flex items-center gap-2">
                                 <Bell className="h-5 w-5" />
-                                <span>การตั้งค่าทั่วไป</span>
+                                การแจ้งเตือนทั่วไป
                             </CardTitle>
                             <CardDescription>
-                                เลือกวิธีการแจ้งเตือนที่คุณต้องการ
+                                ตั้งค่าการแจ้งเตือนพื้นฐาน
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="email_notifications">การแจ้งเตือนทางอีเมล</Label>
+                                    <Label htmlFor="email_notifications">อีเมล</Label>
                                     <p className="text-sm text-muted-foreground">
                                         รับการแจ้งเตือนผ่านอีเมล
                                     </p>
@@ -94,99 +123,132 @@ export default function NotificationsPreferences({ preferences = defaultPreferen
                                 <Switch
                                     id="email_notifications"
                                     checked={form.data.email_notifications}
-                                    onCheckedChange={(checked: boolean) => form.setData('email_notifications', checked)}
+                                    onCheckedChange={() => handleToggle('email_notifications')}
                                 />
                             </div>
-                            {form.errors.email_notifications && (
-                                <p className="text-sm text-red-600">{form.errors.email_notifications}</p>
-                            )}
 
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="push_notifications">การแจ้งเตือนแบบ Push</Label>
+                                    <Label htmlFor="push_notifications">Push Notifications</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        รับการแจ้งเตือนผ่านเบราว์เซอร์
+                                        รับการแจ้งเตือนแบบ Push
                                     </p>
                                 </div>
                                 <Switch
                                     id="push_notifications"
                                     checked={form.data.push_notifications}
-                                    onCheckedChange={(checked: boolean) => form.setData('push_notifications', checked)}
+                                    onCheckedChange={() => handleToggle('push_notifications')}
                                 />
                             </div>
-                            {form.errors.push_notifications && (
-                                <p className="text-sm text-red-600">{form.errors.push_notifications}</p>
-                            )}
 
-                            <div className="space-y-2">
-                                <Label htmlFor="frequency">ความถี่ในการแจ้งเตือน</Label>
-                                <Select
-                                    value={form.data.frequency}
-                                    onValueChange={(value: 'immediate' | 'daily' | 'weekly') => 
-                                        form.setData('frequency', value)
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="เลือกความถี่" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="immediate">ทันที</SelectItem>
-                                        <SelectItem value="daily">สรุปรายวัน</SelectItem>
-                                        <SelectItem value="weekly">สรุปรายสัปดาห์</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <p className="text-sm text-muted-foreground">
-                                    ความถี่ที่คุณต้องการรับการแจ้งเตือน
-                                </p>
-                                {form.errors.frequency && (
-                                    <p className="text-sm text-red-600">{form.errors.frequency}</p>
-                                )}
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="sms_notifications">SMS</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        รับการแจ้งเตือนผ่าน SMS
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="sms_notifications"
+                                    checked={form.data.sms_notifications}
+                                    onCheckedChange={() => handleToggle('sms_notifications')}
+                                />
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Course Notifications */}
+                    {/* Learning Notifications */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>การแจ้งเตือนหลักสูตร</CardTitle>
+                            <CardTitle>การแจ้งเตือนการเรียนรู้</CardTitle>
                             <CardDescription>
-                                จัดการการแจ้งเตือนที่เกี่ยวข้องกับหลักสูตรของคุณ
+                                ตั้งค่าการแจ้งเตือนเกี่ยวกับการเรียนรู้
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="course_updates">การอัปเดตหลักสูตร</Label>
+                                    <Label htmlFor="course_completion">การจบหลักสูตร</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        บทเรียนใหม่ การประกาศ หรือการเปลี่ยนแปลงหลักสูตร
+                                        แจ้งเตือนเมื่อจบหลักสูตร
                                     </p>
                                 </div>
                                 <Switch
-                                    id="course_updates"
-                                    checked={form.data.course_updates}
-                                    onCheckedChange={(checked: boolean) => form.setData('course_updates', checked)}
+                                    id="course_completion"
+                                    checked={form.data.course_completion}
+                                    onCheckedChange={() => handleToggle('course_completion')}
                                 />
                             </div>
-                            {form.errors.course_updates && (
-                                <p className="text-sm text-red-600">{form.errors.course_updates}</p>
-                            )}
 
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="lesson_completions">การเสร็จสิ้นบทเรียน</Label>
+                                    <Label htmlFor="lesson_reminders">การเตือนบทเรียน</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        เมื่อคุณเรียนจบบทเรียน
+                                        แจ้งเตือนให้ทำบทเรียนต่อ
                                     </p>
                                 </div>
                                 <Switch
-                                    id="lesson_completions"
-                                    checked={form.data.lesson_completions}
-                                    onCheckedChange={(checked: boolean) => form.setData('lesson_completions', checked)}
+                                    id="lesson_reminders"
+                                    checked={form.data.lesson_reminders}
+                                    onCheckedChange={() => handleToggle('lesson_reminders')}
                                 />
                             </div>
-                            {form.errors.lesson_completions && (
-                                <p className="text-sm text-red-600">{form.errors.lesson_completions}</p>
-                            )}
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="quiz_reminders">การเตือนแบบทดสอบ</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        แจ้งเตือนเมื่อมีแบบทดสอบใหม่
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="quiz_reminders"
+                                    checked={form.data.quiz_reminders}
+                                    onCheckedChange={() => handleToggle('quiz_reminders')}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="achievements">ความสำเร็จ</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        แจ้งเตือนเมื่อได้รับความสำเร็จ
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="achievements"
+                                    checked={form.data.achievements}
+                                    onCheckedChange={() => handleToggle('achievements')}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="streaks">Streak</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        แจ้งเตือนเกี่ยวกับ Streak การเรียนรู้
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="streaks"
+                                    checked={form.data.streaks}
+                                    onCheckedChange={() => handleToggle('streaks')}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="dropout_risk">ความเสี่ยงในการออก</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        แจ้งเตือนเมื่อมีความเสี่ยงในการออกจากหลักสูตร
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="dropout_risk"
+                                    checked={form.data.dropout_risk}
+                                    onCheckedChange={() => handleToggle('dropout_risk')}
+                                />
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -195,34 +257,48 @@ export default function NotificationsPreferences({ preferences = defaultPreferen
                         <CardHeader>
                             <CardTitle>การแจ้งเตือนระบบ</CardTitle>
                             <CardDescription>
-                                การประกาศและอัปเดตระบบที่สำคัญ
+                                ตั้งค่าการแจ้งเตือนจากระบบ
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="system_announcements">การประกาศระบบ</Label>
+                                    <Label htmlFor="new_courses">หลักสูตรใหม่</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        อัปเดตที่สำคัญเกี่ยวกับแพลตฟอร์ม
+                                        แจ้งเตือนเมื่อมีหลักสูตรใหม่
                                     </p>
                                 </div>
                                 <Switch
-                                    id="system_announcements"
-                                    checked={form.data.system_announcements}
-                                    onCheckedChange={(checked: boolean) => form.setData('system_announcements', checked)}
+                                    id="new_courses"
+                                    checked={form.data.new_courses}
+                                    onCheckedChange={() => handleToggle('new_courses')}
                                 />
                             </div>
-                            {form.errors.system_announcements && (
-                                <p className="text-sm text-red-600">{form.errors.system_announcements}</p>
-                            )}
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="system_maintenance">การบำรุงรักษาระบบ</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        แจ้งเตือนเกี่ยวกับการบำรุงรักษาระบบ
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="system_maintenance"
+                                    checked={form.data.system_maintenance}
+                                    onCheckedChange={() => handleToggle('system_maintenance')}
+                                />
+                            </div>
                         </CardContent>
                     </Card>
 
-                    {/* Save Button */}
                     <div className="flex justify-end">
-                        <Button type="submit" disabled={form.processing}>
-                            <Save className="mr-2 h-4 w-4" />
-                            {form.processing ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
+                        <Button 
+                            type="submit" 
+                            disabled={isLoading || form.processing}
+                            className="flex items-center gap-2"
+                        >
+                            <Save className="h-4 w-4" />
+                            {isLoading || form.processing ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
                         </Button>
                     </div>
                 </form>

@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\CourseCategory;
+use App\Models\User;
 use App\Http\Requests\StoreCourseRequest;
 use App\Http\Requests\UpdateCourseRequest;
+use App\Services\PerformanceOptimizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +19,10 @@ use Exception;
 
 class CourseController extends Controller
 {
+    public function __construct(
+        private PerformanceOptimizationService $performanceService
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -28,14 +34,7 @@ class CourseController extends Controller
             
             if (!$user) {
                 // Guest users see only published courses
-                $courses = Course::with(['creator', 'category'])
-                    ->where('status', 'published')
-                    ->when($search, function ($query, $search) {
-                        $query->where('title', 'like', "%{$search}%")
-                              ->orWhere('description', 'like', "%{$search}%");
-                    })
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+                $courses = $this->performanceService->getOptimizedCourses(null, $search);
                 
                 return Inertia::render('courses/index', [
                     'courses' => $courses,
@@ -45,23 +44,9 @@ class CourseController extends Controller
             }
             
             if ($user->role === 'admin') {
-                $courses = Course::with(['creator', 'category'])
-                    ->where('created_by', $user->id)
-                    ->when($search, function ($query, $search) {
-                        $query->where('title', 'like', "%{$search}%")
-                              ->orWhere('description', 'like', "%{$search}%");
-                    })
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+                $courses = $this->performanceService->getOptimizedCourses($user->id, $search);
             } else {
-                $courses = Course::with(['creator', 'category'])
-                    ->where('status', 'published')
-                    ->when($search, function ($query, $search) {
-                        $query->where('title', 'like', "%{$search}%")
-                              ->orWhere('description', 'like', "%{$search}%");
-                    })
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+                $courses = $this->performanceService->getOptimizedCourses(null, $search);
             }
 
             return Inertia::render('courses/index', [
@@ -122,11 +107,34 @@ class CourseController extends Controller
         try {
             $this->authorize('create', Course::class);
             
+            $categoryId = null;
+            
+            // Handle category creation or selection
+            if ($request->validated('category_option') === 'new' && $request->validated('new_category_name')) {
+                // Create new category
+                $category = CourseCategory::create([
+                    'name' => $request->validated('new_category_name'),
+                    'description' => 'หมวดหมู่ที่สร้างอัตโนมัติ',
+                    'color' => '#3B82F6', // Default blue color
+                    'is_active' => true,
+                    'order' => CourseCategory::max('order') + 1, // Set order to last
+                ]);
+                $categoryId = $category->id;
+                
+                Log::info('New category created', [
+                    'category_id' => $category->id,
+                    'name' => $category->name,
+                    'user_id' => Auth::id(),
+                ]);
+            } elseif ($request->validated('category_option') === 'existing') {
+                $categoryId = $request->validated('category_id');
+            }
+            
             $course = Course::create([
                 'title' => $request->validated('title'),
                 'description' => $request->validated('description'),
                 'image' => $request->validated('image'),
-                'category_id' => $request->validated('category_id'),
+                'category_id' => $categoryId,
                 'status' => $request->validated('status'),
                 'created_by' => Auth::id(),
             ]);
@@ -134,11 +142,12 @@ class CourseController extends Controller
             Log::info('Course created successfully', [
                 'course_id' => $course->id,
                 'user_id' => Auth::id(),
-                'title' => $course->title
+                'title' => $course->title,
+                'category_id' => $categoryId,
             ]);
 
             return Redirect::route('courses.show', $course)
-                ->with('success', 'Course created successfully!');
+                ->with('success', 'สร้างหลักสูตรสำเร็จ!');
         } catch (AuthorizationException $e) {
             abort(403, 'คุณไม่มีสิทธิ์สร้างหลักสูตร');
         }
@@ -147,46 +156,79 @@ class CourseController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Course $course): Response
+    public function show(Course $course)
     {
         try {
-            $this->authorize('view', $course);
-
-            $course->load(['lessons' => function ($query) {
-                $query->orderBy('order');
-            }, 'creator', 'category']);
-
-            $user = Auth::user();
-            $isEnrolled = $user->enrolledCourses()->where('course_id', $course->id)->exists();
-
-            return Inertia::render('courses/show', [
-                'course' => $course,
-                'isAdmin' => $user->role === 'admin',
-                'isEnrolled' => $isEnrolled,
-            ]);
-        } catch (AuthorizationException $e) {
-            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหลักสูตรนี้');
-        } catch (Exception $e) {
-            Log::error('Error in CourseController@show', [
+            Log::info('CourseController@show: Starting course details load', [
                 'course_id' => $course->id,
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'user_email' => Auth::user()?->email
             ]);
 
-            abort(500, 'เกิดข้อผิดพลาดในการโหลดข้อมูลหลักสูตร');
+            $user = Auth::user();
+            
+            // Check authorization
+            if ($user) {
+                $this->authorize('view', $course);
+            } else {
+                // Guest users can only view published courses
+                if ($course->status !== 'published') {
+                    Log::warning('CourseController@show: Guest user trying to access unpublished course', [
+                        'course_id' => $course->id,
+                        'course_status' => $course->status
+                    ]);
+                    abort(403, 'คุณต้องเข้าสู่ระบบเพื่อดูหลักสูตรนี้');
+                }
+            }
+
+            $courseDetails = $this->performanceService->getOptimizedCourseDetails($course->id, $user?->id);
+
+            Log::info('CourseController@show: Successfully loaded course details', [
+                'course_id' => $course->id,
+                'user_id' => $user?->id,
+                'is_enrolled' => $courseDetails->is_enrolled ?? false
+            ]);
+
+            return Inertia::render('courses/show', [
+                'course' => $courseDetails,
+                'isAdmin' => $user?->role === 'admin',
+                'isEnrolled' => $courseDetails->is_enrolled ?? false,
+            ]);
+
+        } catch (AuthorizationException $e) {
+            Log::warning('CourseController@show: Authorization failed', [
+                'course_id' => $course->id,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหลักสูตรนี้');
+        } catch (Exception $e) {
+            Log::error('CourseController@show: Fatal error', [
+                'course_id' => $course->id,
+                'user_id' => Auth::id(),
+                'user_email' => Auth::user()?->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'course_title' => $course->title ?? 'Unknown',
+                'course_status' => $course->status ?? 'Unknown'
+            ]);
+
+            // Return error response instead of abort
+            return Inertia::render('courses/show', [
+                'course' => null,
+                'isAdmin' => Auth::user()?->role === 'admin',
+                'isEnrolled' => false,
+                'error' => 'เกิดข้อผิดพลาดในการโหลดข้อมูลหลักสูตร: ' . $e->getMessage()
+            ]);
         }
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id): Response
+    public function edit(Course $course): Response
     {
         try {
-            // Manual model loading instead of route model binding
-            $course = Course::findOrFail($id);
-            
             $this->authorize('update', $course);
             
             $categories = CourseCategory::active()->ordered()->get();
@@ -197,7 +239,7 @@ class CourseController extends Controller
             ]);
         } catch (Exception $e) {
             Log::error('Error in CourseController@edit', [
-                'course_id' => $id ?? 'unknown',
+                'course_id' => $course->id,
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -210,12 +252,9 @@ class CourseController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCourseRequest $request, $id)
+    public function update(UpdateCourseRequest $request, Course $course)
     {
         try {
-            // Manual model loading instead of route model binding
-            $course = Course::findOrFail($id);
-            
             $this->authorize('update', $course);
 
             $course->update($request->validated());
@@ -230,7 +269,7 @@ class CourseController extends Controller
                 ->with('success', 'Course updated successfully!');
         } catch (Exception $e) {
             Log::error('Error updating course', [
-                'course_id' => $id ?? 'unknown',
+                'course_id' => $course->id,
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -243,12 +282,9 @@ class CourseController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(Course $course)
     {
         try {
-            // Manual model loading instead of route model binding
-            $course = Course::findOrFail($id);
-            
             $this->authorize('delete', $course);
 
             // Check if course has enrolled students
@@ -271,7 +307,7 @@ class CourseController extends Controller
 
         } catch (Exception $e) {
             Log::error('Error deleting course', [
-                'course_id' => $id ?? 'unknown',
+                'course_id' => $course->id,
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -285,12 +321,10 @@ class CourseController extends Controller
     /**
      * Enroll user in a course
      */
-    public function enroll($id)
+    public function enroll(Course $course)
     {
         try {
-            // Manual model loading instead of route model binding
-            $course = Course::findOrFail($id);
-            
+            /** @var User $user */
             $user = Auth::user();
             
             // Check if user is already enrolled
@@ -321,7 +355,7 @@ class CourseController extends Controller
         } catch (Exception $e) {
             Log::error('Error enrolling user in course', [
                 'user_id' => Auth::id(),
-                'course_id' => $id ?? 'unknown',
+                'course_id' => $course->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

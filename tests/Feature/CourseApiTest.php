@@ -38,6 +38,7 @@ class CourseApiTest extends TestCase
                 'title' => 'Test Course',
                 'description' => 'Test Description',
                 'image' => 'https://example.com/image.jpg',
+                'category_option' => 'existing',
                 'category_id' => $this->category->id,
                 'status' => 'draft',
             ]);

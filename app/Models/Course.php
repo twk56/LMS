@@ -59,13 +59,6 @@ class Course extends Model
         return $this->hasMany(Lesson::class)->orderBy('order');
     }
 
-    /**
-     * Get the quizzes for this course through lessons
-     */
-    public function quizzes()
-    {
-        return $this->hasManyThrough(Quiz::class, Lesson::class);
-    }
 
     /**
      * Get the enrolled students
@@ -75,6 +68,14 @@ class Course extends Model
         return $this->belongsToMany(User::class, 'course_user')
                     ->withPivot('status', 'enrolled_at', 'completed_at')
                     ->withTimestamps();
+    }
+
+    /**
+     * Alias for students relationship
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->students();
     }
 
     /**
@@ -101,13 +102,6 @@ class Course extends Model
         return $this->lessons()->where('status', 'published');
     }
 
-    /**
-     * Get active quizzes
-     */
-    public function activeQuizzes()
-    {
-        return $this->quizzes()->where('is_active', true);
-    }
 
     /**
      * Check if user is enrolled in this course
@@ -139,6 +133,14 @@ class Course extends Model
             ->count();
 
         return round(($completedLessons / $totalLessons) * 100, 2);
+    }
+
+    /**
+     * Get progress percentage for a user (alias for getCompletionPercentage)
+     */
+    public function getProgressPercentage(User $user): float
+    {
+        return $this->getCompletionPercentage($user);
     }
 
     /**

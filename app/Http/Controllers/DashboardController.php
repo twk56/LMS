@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Models\Lesson;
-use App\Models\Quiz;
-use App\Models\Certificate;
+use App\Models\User;
+use App\Services\PerformanceOptimizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,159 +15,159 @@ use Illuminate\Http\RedirectResponse;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private PerformanceOptimizationService $performanceService
+    ) {}
+
     /**
      * Display the dashboard.
      */
-    public function index(): Response|RedirectResponse
+    public function index(): Response
     {
         try {
             $user = Auth::user();
             
-            // Check if user is authenticated
-            if (!$user) {
-                return redirect()->route('login');
-            }
+            Log::info('DashboardController@index: Starting dashboard load', [
+                'user_id' => $user?->id,
+                'user_email' => $user?->email,
+                'user_role' => $user?->role
+            ]);
             
             if ($user->role === 'admin') {
-                // Admin dashboard - show all courses with eager loading
-                $courses = Course::with([
-                    'creator:id,name,email',
-                    'category:id,name,color',
-                    'lessons:id,course_id,title,order,status',
-                    'students:id,name,email',
-                    'certificates:id,course_id,user_id,issued_at'
-                ])
-                ->where('created_by', $user->id)
-                ->withCount(['lessons', 'students', 'certificates'])
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-                // Get statistics
-                $stats = $this->getAdminStats($user->id);
-                
+                return $this->adminDashboard();
             } else {
-                // Student dashboard - show enrolled courses with eager loading
-                $courses = $user->enrolledCourses()
-                    ->with([
-                        'creator:id,name,email',
-                        'category:id,name,color',
-                        'lessons:id,course_id,title,order,status',
-                        'certificates' => function ($query) use ($user) {
-                            $query->where('user_id', $user->id);
-                        }
-                    ])
-                    ->withCount(['lessons', 'certificates'])
-                    ->orderBy('pivot_enrolled_at', 'desc')
-                    ->get();
-
-                // Get student progress
-                $stats = $this->getStudentStats($user->id);
+                return $this->studentDashboard();
             }
-
-            return Inertia::render('dashboard', [
-                'courses' => $courses,
-                'isAdmin' => $user->role === 'admin',
-                'stats' => $stats,
-            ]);
-
         } catch (\Exception $e) {
-            Log::error('Error in DashboardController@index', [
+            Log::error('DashboardController@index: Fatal error', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
+            
             return Inertia::render('dashboard', [
-                'courses' => [],
-                'isAdmin' => Auth::user()->role === 'admin',
+                'user' => Auth::user(),
+                'isAdmin' => false,
                 'stats' => [],
-                'error' => 'เกิดข้อผิดพลาดในการโหลดข้อมูล'
+                'error' => 'เกิดข้อผิดพลาดในการโหลดหน้าหลัก'
             ]);
         }
     }
 
     /**
-     * Get admin statistics
+     * Admin Dashboard
      */
-    private function getAdminStats(int $userId): array
+    private function adminDashboard(): Response
     {
-        $stats = DB::select("
-            SELECT 
-                COUNT(DISTINCT c.id) as total_courses,
-                COUNT(DISTINCT l.id) as total_lessons,
-                COUNT(DISTINCT cu.user_id) as total_students,
-                COUNT(DISTINCT cert.id) as total_certificates,
-                ROUND(
-                    (COUNT(DISTINCT CASE WHEN cu.status = 'completed' THEN cu.user_id END) * 100.0) / 
-                    NULLIF(COUNT(DISTINCT cu.user_id), 0), 2
-                ) as avg_completion
-            FROM courses c
-            LEFT JOIN lessons l ON c.id = l.course_id
-            LEFT JOIN course_user cu ON c.id = cu.course_id
-            LEFT JOIN certificates cert ON c.id = cert.course_id
-            WHERE c.created_by = ?
-        ", [$userId]);
+        try {
+            $user = Auth::user();
+            
+            Log::info('DashboardController@adminDashboard: Loading admin dashboard', [
+                'admin_user_id' => $user->id,
+                'admin_user_email' => $user->email
+            ]);
+            
+            // Use optimized dashboard stats
+            $stats = $this->performanceService->getOptimizedDashboardStats();
+            
+            // Get additional admin data
+            $recentActivities = $this->getRecentActivities();
+            $courseStats = $this->getCourseStats();
+            $userStats = $this->getUserStats();
 
-        $recentActivity = DB::table('course_user')
-            ->join('courses', 'course_user.course_id', '=', 'courses.id')
-            ->join('users', 'course_user.user_id', '=', 'users.id')
-            ->select('users.name', 'courses.title as course_title', 'course_user.enrolled_at')
-            ->where('courses.created_by', $userId)
-            ->orderBy('course_user.enrolled_at', 'desc')
-            ->limit(5)
-            ->get();
+            Log::info('DashboardController@adminDashboard: Successfully loaded admin dashboard', [
+                'admin_user_id' => $user->id,
+                'stats_keys' => array_keys($stats),
+                'recent_activities_count' => count($recentActivities),
+                'course_stats_count' => count($courseStats)
+            ]);
 
-        return [
-            'total_courses' => $stats[0]->total_courses ?? 0,
-            'total_lessons' => $stats[0]->total_lessons ?? 0,
-            'total_students' => $stats[0]->total_students ?? 0,
-            'total_certificates' => $stats[0]->total_certificates ?? 0,
-            'avg_completion' => round($stats[0]->avg_completion ?? 0, 2),
-            'recent_activity' => $recentActivity
-        ];
+            return Inertia::render('dashboard', [
+                'user' => $user,
+                'isAdmin' => true,
+                'stats' => $stats,
+                'recentActivities' => $recentActivities,
+                'courseStats' => $courseStats,
+                'userStats' => $userStats,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('DashboardController@adminDashboard: Error loading admin dashboard', [
+                'admin_user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return Inertia::render('dashboard', [
+                'user' => Auth::user(),
+                'isAdmin' => true,
+                'stats' => [],
+                'recentActivities' => [],
+                'courseStats' => [],
+                'userStats' => [],
+                'error' => 'เกิดข้อผิดพลาดในการโหลดหน้าหลัก Admin'
+            ]);
+        }
     }
 
     /**
-     * Get student statistics
+     * Student Dashboard
      */
-    private function getStudentStats(int $userId): array
+    private function studentDashboard(): Response
     {
-        $stats = DB::select("
-            SELECT 
-                COUNT(DISTINCT cu.course_id) as enrolled_courses,
-                COUNT(DISTINCT lp.lesson_id) as completed_lessons,
-                COUNT(DISTINCT cert.id) as earned_certificates,
-                ROUND(
-                    (COUNT(DISTINCT CASE WHEN lp.status = 'completed' THEN lp.lesson_id END) * 100.0) / 
-                    NULLIF(COUNT(DISTINCT lp.lesson_id), 0), 2
-                ) as avg_progress
-            FROM course_user cu
-            LEFT JOIN lesson_progress lp ON cu.user_id = lp.user_id 
-                AND lp.lesson_id IN (
-                    SELECT id FROM lessons WHERE course_id = cu.course_id
-                )
-            LEFT JOIN certificates cert ON cu.course_id = cert.course_id AND cert.user_id = cu.user_id
-            WHERE cu.user_id = ?
-        ", [$userId]);
+        try {
+            $user = Auth::user();
+            
+            Log::info('DashboardController@studentDashboard: Loading student dashboard', [
+                'student_user_id' => $user->id,
+                'student_user_email' => $user->email
+            ]);
+            
+            // Use optimized student dashboard stats
+            $stats = $this->performanceService->getOptimizedStudentDashboard($user->id);
+            
+            // Get additional student data
+            $enrolledCourses = $stats['enrolled_courses_data'] ?? [];
+            $recentCompletions = $stats['recent_completions'] ?? [];
+            $upcomingLessons = $stats['upcoming_lessons'] ?? [];
+            $recentActivities = $this->getStudentRecentActivities($user->id);
 
-        $recentProgress = DB::table('lesson_progress')
-            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
-            ->join('courses', 'lessons.course_id', '=', 'courses.id')
-            ->select('courses.title as course_title', 'lessons.title as lesson_title', 'lesson_progress.completed_at')
-            ->where('lesson_progress.user_id', $userId)
-            ->where('lesson_progress.status', 'completed')
-            ->orderBy('lesson_progress.completed_at', 'desc')
-            ->limit(5)
-            ->get();
+            Log::info('DashboardController@studentDashboard: Successfully loaded student dashboard', [
+                'student_user_id' => $user->id,
+                'stats_keys' => array_keys($stats),
+                'enrolled_courses_count' => count($enrolledCourses),
+                'recent_completions_count' => count($recentCompletions),
+                'upcoming_lessons_count' => count($upcomingLessons)
+            ]);
 
-        return [
-            'enrolled_courses' => $stats[0]->enrolled_courses ?? 0,
-            'completed_lessons' => $stats[0]->completed_lessons ?? 0,
-            'earned_certificates' => $stats[0]->earned_certificates ?? 0,
-            'avg_progress' => round($stats[0]->avg_progress ?? 0, 2),
-            'recent_progress' => $recentProgress
-        ];
+            return Inertia::render('dashboard', [
+                'user' => $user,
+                'isAdmin' => false,
+                'stats' => $stats,
+                'enrolledCourses' => $enrolledCourses,
+                'recentCompletions' => $recentCompletions,
+                'upcomingLessons' => $upcomingLessons,
+                'recentActivities' => $recentActivities,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('DashboardController@studentDashboard: Error loading student dashboard', [
+                'student_user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return Inertia::render('dashboard', [
+                'user' => Auth::user(),
+                'isAdmin' => false,
+                'stats' => [],
+                'enrolledCourses' => [],
+                'recentCompletions' => [],
+                'upcomingLessons' => [],
+                'recentActivities' => [],
+                'error' => 'เกิดข้อผิดพลาดในการโหลดหน้าหลัก Student'
+            ]);
+        }
     }
+
 
     /**
      * Get course analytics for admin
@@ -227,6 +226,170 @@ class DashboardController extends Controller
             ]);
 
             abort(500, 'เกิดข้อผิดพลาดในการโหลดข้อมูลวิเคราะห์');
+        }
+    }
+
+    /**
+     * Get recent activities for admin dashboard
+     */
+    private function getRecentActivities(): array
+    {
+        try {
+            Log::info('DashboardController@getRecentActivities: Starting to fetch recent activities');
+            
+            $activities = DB::table('lesson_progress')
+                ->join('lessons', 'lessons.id', '=', 'lesson_progress.lesson_id')
+                ->join('users', 'users.id', '=', 'lesson_progress.user_id')
+                ->join('courses', 'courses.id', '=', 'lessons.course_id')
+                ->whereNotNull('lesson_progress.completed_at')
+                ->select(
+                    'users.name as user_name',
+                    'courses.title as course_title',
+                    'lessons.title as lesson_title',
+                    'lesson_progress.completed_at as created_at'
+                )
+                ->orderBy('lesson_progress.completed_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->toArray();
+            
+            Log::info('DashboardController@getRecentActivities: Successfully fetched activities', [
+                'count' => count($activities)
+            ]);
+            
+            return $activities;
+        } catch (\Exception $e) {
+            Log::error('DashboardController@getRecentActivities: Error fetching recent activities', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Get course statistics for admin dashboard
+     */
+    private function getCourseStats(): array
+    {
+        try {
+            Log::info('DashboardController@getCourseStats: Starting to fetch course statistics');
+            
+            $courseStats = DB::table('courses')
+                ->leftJoin('course_categories', 'courses.category_id', '=', 'course_categories.id')
+                ->leftJoin('course_user', 'courses.id', '=', 'course_user.course_id')
+                ->select(
+                    'courses.id',
+                    'courses.title',
+                    'courses.status',
+                    'courses.created_at',
+                    'course_categories.name as category_name',
+                    DB::raw('COUNT(course_user.user_id) as students_count')
+                )
+                ->groupBy('courses.id', 'courses.title', 'courses.status', 'courses.created_at', 'course_categories.name')
+                ->orderBy('courses.created_at', 'desc')
+                ->limit(6)
+                ->get()
+                ->toArray();
+            
+            Log::info('DashboardController@getCourseStats: Successfully fetched course statistics', [
+                'count' => count($courseStats)
+            ]);
+            
+            return $courseStats;
+        } catch (\Exception $e) {
+            Log::error('DashboardController@getCourseStats: Error fetching course statistics', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Get user statistics for admin dashboard
+     */
+    private function getUserStats(): array
+    {
+        try {
+            Log::info('DashboardController@getUserStats: Starting to fetch user statistics');
+            
+            $userStats = [
+                'total_users' => DB::table('users')->count(),
+                'admin_users' => DB::table('users')->where('role', 'admin')->count(),
+                'student_users' => DB::table('users')->where('role', 'student')->count(),
+                'active_users' => DB::table('users')
+                    ->where('last_login_at', '>=', now()->subDays(30))
+                    ->count(),
+                'new_users_this_month' => DB::table('users')
+                    ->where('created_at', '>=', now()->startOfMonth())
+                    ->count(),
+            ];
+            
+            Log::info('DashboardController@getUserStats: Successfully fetched user statistics', $userStats);
+            
+            return $userStats;
+        } catch (\Exception $e) {
+            Log::error('DashboardController@getUserStats: Error fetching user statistics', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            return [
+                'total_users' => 0,
+                'admin_users' => 0,
+                'student_users' => 0,
+                'active_users' => 0,
+                'new_users_this_month' => 0,
+            ];
+        }
+    }
+
+    /**
+     * Get student recent activities
+     */
+    private function getStudentRecentActivities(int $userId): array
+    {
+        try {
+            Log::info('DashboardController@getStudentRecentActivities: Starting to fetch student activities', [
+                'user_id' => $userId
+            ]);
+            
+            $activities = DB::table('lesson_progress')
+                ->join('lessons', 'lessons.id', '=', 'lesson_progress.lesson_id')
+                ->join('courses', 'courses.id', '=', 'lessons.course_id')
+                ->where('lesson_progress.user_id', $userId)
+                ->where('lesson_progress.status', 'completed')
+                ->select(
+                    'courses.title as course_title',
+                    'lessons.title as lesson_title',
+                    'lesson_progress.completed_at as created_at'
+                )
+                ->orderBy('lesson_progress.completed_at', 'desc')
+                ->limit(5)
+                ->get()
+                ->toArray();
+            
+            Log::info('DashboardController@getStudentRecentActivities: Successfully fetched student activities', [
+                'user_id' => $userId,
+                'count' => count($activities)
+            ]);
+            
+            return $activities;
+        } catch (\Exception $e) {
+            Log::error('DashboardController@getStudentRecentActivities: Error fetching student activities', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            return [];
         }
     }
 }

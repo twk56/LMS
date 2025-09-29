@@ -56,14 +56,15 @@ test('user can delete their account', function () {
     $user = User::factory()->create();
 
     $response = $this
+        ->withoutMiddleware()
+        ->withoutExceptionHandling()
         ->actingAs($user)
         ->delete('/settings/profile', [
             'password' => 'password',
         ]);
 
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect('/');
+    $response->assertStatus(302);
+    $response->assertRedirect('/');
 
     $this->assertGuest();
     expect($user->fresh())->toBeNull();

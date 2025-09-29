@@ -44,7 +44,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     return (
         <>
-            <Head title="เข้าสู่ระบบ - Creative Learning" />
+            <Head title="เข้าสู่ระบบ - Laravel Learning Management System" />
             
             {/* Creative Login Page */}
             <div className="min-h-screen bg-black relative overflow-hidden flex items-center justify-center">

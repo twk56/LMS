@@ -16,11 +16,14 @@ class LessonProgress extends Model
         'user_id',
         'lesson_id',
         'status',
+        'is_completed',
         'started_at',
         'completed_at',
+        'time_spent',
     ];
 
     protected $casts = [
+        'is_completed' => 'boolean',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
@@ -59,6 +62,7 @@ class LessonProgress extends Model
     {
         $this->update([
             'status' => 'completed',
+            'is_completed' => true,
             'completed_at' => now(),
         ]);
     }

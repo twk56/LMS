@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 class LessonFile extends Model
@@ -25,29 +26,28 @@ class LessonFile extends Model
     ];
 
     protected $casts = [
+        'is_active' => 'boolean',
         'file_size' => 'integer',
         'order' => 'integer',
-        'is_active' => 'boolean',
     ];
 
-    // Relationships
-    public function lesson()
+    public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
     }
 
-    public function course()
-    {
-        return $this->hasOneThrough(Course::class, Lesson::class, 'id', 'id', 'lesson_id', 'course_id');
-    }
-
-    // Helper methods
-    public function getUrlAttribute()
+    /**
+     * Get the file URL
+     */
+    public function getUrlAttribute(): string
     {
         return Storage::url($this->file_path);
     }
 
-    public function getFormattedSizeAttribute()
+    /**
+     * Get formatted file size
+     */
+    public function getFormattedSizeAttribute(): string
     {
         $bytes = $this->file_size;
         $units = ['B', 'KB', 'MB', 'GB'];
@@ -59,31 +59,35 @@ class LessonFile extends Model
         return round($bytes, 2) . ' ' . $units[$i];
     }
 
-    public function isImage()
+    /**
+     * Get file icon based on type
+     */
+    public function getIconAttribute(): string
     {
-        return in_array($this->file_type, ['image']);
+        return match ($this->file_type) {
+            'image' => '🖼️',
+            'video' => '🎥',
+            'audio' => '🎵',
+            'pdf' => '📄',
+            'document' => '📝',
+            'archive' => '📦',
+            default => '📁',
+        };
     }
 
-    public function isVideo()
+    /**
+     * Scope for active files
+     */
+    public function scopeActive($query)
     {
-        return in_array($this->file_type, ['video']);
+        return $query->where('is_active', true);
     }
 
-    public function isPdf()
+    /**
+     * Scope for ordered files
+     */
+    public function scopeOrdered($query)
     {
-        return $this->mime_type === 'application/pdf';
-    }
-
-    public function getIconAttribute()
-    {
-        if ($this->isImage()) {
-            return 'image';
-        } elseif ($this->isVideo()) {
-            return 'video';
-        } elseif ($this->isPdf()) {
-            return 'file-text';
-        } else {
-            return 'file';
-        }
+        return $query->orderBy('order')->orderBy('created_at');
     }
 }

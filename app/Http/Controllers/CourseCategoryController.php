@@ -7,6 +7,7 @@ use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,15 +17,45 @@ class CourseCategoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index()
     {
-        $this->authorize('viewAny', CourseCategory::class);
+        try {
+            Log::info('CourseCategoryController@index: Starting categories page load', [
+                'user_id' => Auth::id(),
+                'user_email' => Auth::user()?->email
+            ]);
 
-        $categories = CourseCategory::active()->ordered()->withCount('courses')->get();
+            $user = Auth::user();
+            if (!$user) {
+                Log::warning('CourseCategoryController@index: User not authenticated, redirecting to login');
+                return redirect()->route('login');
+            }
 
-        return Inertia::render('Categories/Index', [
-            'categories' => $categories,
-        ]);
+            $this->authorize('viewAny', CourseCategory::class);
+
+            $categories = CourseCategory::active()->ordered()->withCount('courses')->get();
+
+            Log::info('CourseCategoryController@index: Successfully loaded categories', [
+                'user_id' => $user->id,
+                'categories_count' => $categories->count()
+            ]);
+
+            return Inertia::render('categories/index', [
+                'categories' => $categories,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('CourseCategoryController@index: Fatal error', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return Inertia::render('categories/index', [
+                'categories' => [],
+                'error' => 'เกิดข้อผิดพลาดในการโหลดข้อมูลหมวดหมู่'
+            ]);
+        }
     }
 
     /**
@@ -34,7 +65,7 @@ class CourseCategoryController extends Controller
     {
         $this->authorize('create', CourseCategory::class);
 
-        return Inertia::render('Categories/Create');
+        return Inertia::render('categories/create');
     }
 
     /**
@@ -59,7 +90,7 @@ class CourseCategoryController extends Controller
 
         $courses = $category->courses()->with('creator')->paginate(12);
 
-        return Inertia::render('Categories/Show', [
+        return Inertia::render('categories/show', [
             'category' => $category,
             'courses' => $courses,
         ]);
@@ -72,7 +103,7 @@ class CourseCategoryController extends Controller
     {
         $this->authorize('update', $category);
 
-        return Inertia::render('Categories/Edit', [
+        return Inertia::render('categories/edit', [
             'category' => $category,
         ]);
     }

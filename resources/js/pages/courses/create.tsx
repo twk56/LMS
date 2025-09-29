@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 
@@ -40,6 +41,8 @@ export default function CreateCourse({ categories = [] }: PageProps) {
         description: '',
         image: '',
         category_id: '',
+        new_category_name: '',
+        category_option: 'existing', // 'existing' or 'new'
         status: 'draft',
     });
 
@@ -117,28 +120,62 @@ export default function CreateCourse({ categories = [] }: PageProps) {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="category_id">หมวดหมู่</Label>
-                                        <Select
-                                            value={form.data.category_id}
-                                            onValueChange={(value) => form.setData('category_id', value)}
-                                        >
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue placeholder="เลือกหมวดหมู่" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {categories.map((category) => (
-                                                    <SelectItem key={category.id} value={category.id.toString()}>
-                                                        {category.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {form.errors.category_id && (
-                                            <p className="text-sm text-red-600 mt-1">{form.errors.category_id}</p>
-                                        )}
-                                    </div>
+                                <div>
+                                    <Label>หมวดหมู่</Label>
+                                    <RadioGroup
+                                        value={form.data.category_option}
+                                        onValueChange={(value) => form.setData('category_option', value)}
+                                        className="mt-2"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="existing" id="existing" />
+                                            <Label htmlFor="existing">เลือกจากหมวดหมู่ที่มีอยู่</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="new" id="new" />
+                                            <Label htmlFor="new">สร้างหมวดหมู่ใหม่</Label>
+                                        </div>
+                                    </RadioGroup>
+
+                                    {form.data.category_option === 'existing' && (
+                                        <div className="mt-3">
+                                            <Select
+                                                value={form.data.category_id}
+                                                onValueChange={(value) => form.setData('category_id', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="เลือกหมวดหมู่" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {categories.map((category) => (
+                                                        <SelectItem key={category.id} value={category.id.toString()}>
+                                                            {category.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {form.errors.category_id && (
+                                                <p className="text-sm text-red-600 mt-1">{form.errors.category_id}</p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {form.data.category_option === 'new' && (
+                                        <div className="mt-3">
+                                            <Input
+                                                value={form.data.new_category_name}
+                                                onChange={(e) => form.setData('new_category_name', e.target.value)}
+                                                placeholder="ชื่อหมวดหมู่ใหม่"
+                                                required={form.data.category_option === 'new'}
+                                            />
+                                            {form.errors.new_category_name && (
+                                                <p className="text-sm text-red-600 mt-1">{form.errors.new_category_name}</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
 
                                     <div>
                                         <Label htmlFor="status">สถานะ</Label>

@@ -5,20 +5,51 @@ namespace App\Http\Controllers;
 use App\Models\Certificate;
 use App\Models\Course;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class CertificateController extends Controller
 {
     public function index()
     {
-        $certificates = auth()->user()->certificates()
-            ->with(['course'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        try {
+            Log::info('CertificateController@index: Starting certificates page load', [
+                'user_id' => auth()->id(),
+                'user_email' => auth()->user()?->email
+            ]);
 
-        return Inertia::render('certificates/index', [
-            'certificates' => $certificates,
-        ]);
+            $user = auth()->user();
+            if (!$user) {
+                Log::warning('CertificateController@index: User not authenticated, redirecting to login');
+                return redirect()->route('login');
+            }
+
+            $certificates = $user->certificates()
+                ->with(['course'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            Log::info('CertificateController@index: Successfully loaded certificates', [
+                'user_id' => $user->id,
+                'certificates_count' => $certificates->count()
+            ]);
+
+            return Inertia::render('certificates/Index', [
+                'certificates' => $certificates,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('CertificateController@index: Fatal error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return Inertia::render('certificates/Index', [
+                'certificates' => [],
+                'error' => 'เกิดข้อผิดพลาดในการโหลดข้อมูลใบรับรอง'
+            ]);
+        }
     }
 
     public function show(Certificate $certificate)

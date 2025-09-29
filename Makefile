@@ -1,154 +1,128 @@
-# Laravel Development Makefile
-# Provides convenient commands for development
+# Laravel LMS Development Commands
+# Alternative to PowerShell for better compatibility
 
-.PHONY: help dev setup fix clean test-user install prod-check prod-check-migrate deploy docs test-production render-deploy
+.PHONY: help dev setup test cache-clear cache-warm optimize
 
-# Default target
-help:
+help: ## Show this help message
 	@echo "Available commands:"
-	@echo "  make dev              - Start development environment (full setup)"
-	@echo "  make setup            - Setup project from scratch"
-	@echo "  make fix              - Quick fix common issues"
-	@echo "  make clean            - Clean all caches and processes"
-	@echo "  make install          - Install dependencies"
-	@echo "  make test-user        - Create test user"
-	@echo "  make dev-simple       - Start simple development servers"
-	@echo "  make prod-check       - Run production verification"
-	@echo "  make prod-check-migrate - Run production verification with migrations"
-	@echo "  make test-production  - Test production build locally"
-	@echo "  make render-deploy    - Prepare for Render deployment"
-	@echo "  make deploy           - Show deployment instructions"
-	@echo "  make docs             - Show documentation structure"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# Full development setup
-dev:
-	@echo "🚀 Starting full development environment..."
-	@chmod +x scripts/development/dev-setup.sh
-	@./scripts/development/dev-setup.sh
+dev: ## Start development server
+	@echo "Starting development server..."
+	php artisan serve
 
-# Setup project from scratch
-setup:
-	@echo "🔧 Setting up project from scratch..."
-	@composer install
-	@npm install
-	@composer run setup
-	@composer run create-test-user
-	@echo "✅ Setup complete!"
+dev-full: ## Start full development environment
+	@echo "Starting full development environment..."
+	composer run dev
 
-# Quick fix common issues
-fix:
-	@echo "🔧 Quick fixing common issues..."
-	@chmod +x scripts/maintenance/quick-fix.sh
-	@./scripts/maintenance/quick-fix.sh
+setup: ## Setup the project
+	@echo "Setting up the project..."
+	composer install
+	npm install
+	cp .env.example .env
+	php artisan key:generate
+	php artisan migrate --force
+	php artisan ziggy:generate
 
-# Clean everything
-clean:
-	@echo "🧹 Cleaning everything..."
-	@pkill -f "php artisan serve" 2>/dev/null || true
-	@pkill -f "npm run dev" 2>/dev/null || true
-	@pkill -f "vite" 2>/dev/null || true
-	@pkill -f "concurrently" 2>/dev/null || true
-	@composer run fix
-	@rm -rf node_modules/.vite 2>/dev/null || true
-	@echo "✅ Clean complete!"
+test: ## Run tests
+	@echo "Running tests..."
+	php artisan test
 
-# Install dependencies
-install:
-	@echo "📦 Installing dependencies..."
-	@composer install
-	@npm install
-	@echo "✅ Dependencies installed!"
+cache-clear: ## Clear all caches
+	@echo "Clearing all caches..."
+	php artisan config:clear
+	php artisan route:clear
+	php artisan cache:clear
+	php artisan view:clear
 
-# Create test user
-test-user:
-	@echo "👤 Creating test user..."
-	@composer run create-test-user
+cache-warm: ## Warm up all caches
+	@echo "Warming up caches..."
+	php artisan config:cache
+	php artisan route:cache
+	php artisan view:cache
 
-# Simple development servers
-dev-simple:
-	@echo "🚀 Starting simple development servers..."
-	@composer run fix
-	@echo "Starting Laravel server on port 8000..."
-	@php artisan serve --port=8000 &
-	@echo "Starting Vite server..."
-	@npm run dev &
-	@echo "✅ Servers started!"
-	@echo "🌐 Laravel: http://localhost:8000"
-	@echo "⚡ Vite: http://localhost:5173"
-	@echo "Press Ctrl+C to stop"
-	@wait
+optimize: ## Optimize for production
+	@echo "Optimizing for production..."
+	php artisan config:cache
+	php artisan route:cache
+	php artisan view:cache
+	composer install --optimize-autoloader --no-dev
 
-# Production verification
-prod-check:
-	@echo "🔍 Running production verification..."
-	@bash scripts/deployment/verify_prod.sh
+fix: ## Quick fix common issues
+	@echo "Fixing common issues..."
+	php artisan config:clear
+	php artisan route:clear
+	php artisan cache:clear
+	php artisan view:clear
+	php artisan ziggy:generate
 
-# Production verification with migrations
-prod-check-migrate:
-	@echo "🔍 Running production verification with migrations..."
-	@bash scripts/deployment/verify_prod.sh --migrate
+clean: ## Clean up temporary files
+	@echo "Cleaning up..."
+	rm -rf bootstrap/cache/*
+	rm -rf storage/framework/cache/*
+	rm -rf storage/framework/views/*
+	rm -rf storage/framework/sessions/*
 
-# Show deployment instructions
-deploy:
-	@echo "🚀 Deployment Instructions:"
-	@echo ""
-	@echo "📖 Read deployment guide:"
-	@echo "   cat deployment/RENDER_DEPLOYMENT.md"
-	@echo ""
-	@echo "🔧 Run deployment script:"
-	@echo "   ./scripts/deployment/deploy-render.sh"
-	@echo ""
-	@echo "✅ Check production readiness:"
-	@echo "   ./scripts/deployment/verify_prod.sh"
+install-deps: ## Install all dependencies
+	@echo "Installing dependencies..."
+	composer install
+	npm install
 
-# Test production build locally
-test-production:
-	@echo "🧪 Testing production build locally..."
-	@chmod +x scripts/deployment/test-production.sh
-	@./scripts/deployment/test-production.sh
+migrate: ## Run migrations
+	@echo "Running migrations..."
+	php artisan migrate
 
-# Prepare for Render deployment
-render-deploy:
-	@echo "🚀 Preparing for Render deployment..."
-	@echo ""
-	@echo "✅ Files ready for deployment:"
-	@echo "   - render.yaml (Render configuration)"
-	@echo "   - Dockerfile (Container configuration)"
-	@echo "   - Fixed CoursePolicy for published courses"
-	@echo "   - Added flash message support"
-	@echo "   - Fixed database seeder"
-	@echo ""
-	@echo "📋 Next steps:"
-	@echo "1. Push changes to GitHub:"
-	@echo "   git add ."
-	@echo "   git commit -m 'Prepare for Render deployment'"
-	@echo "   git push origin main"
-	@echo ""
-	@echo "2. Go to Render Dashboard:"
-	@echo "   https://dashboard.render.com"
-	@echo ""
-	@echo "3. Create New Web Service:"
-	@echo "   - Connect GitHub repository"
-	@echo "   - Use render.yaml configuration"
-	@echo "   - Deploy automatically"
-	@echo ""
-	@echo "4. Test deployment:"
-	@echo "   - Check build logs"
-	@echo "   - Visit your app URL"
-	@echo "   - Test /health endpoint"
+seed: ## Run seeders
+	@echo "Running seeders..."
+	php artisan db:seed
 
-# Show documentation structure
-docs:
-	@echo "📚 Documentation Structure:"
-	@echo ""
-	@echo "📖 Main Documentation:"
-	@echo "   docs/README.md"
-	@echo ""
-	@echo "📁 Scripts Documentation:"
-	@echo "   scripts/README.md"
-	@echo ""
-	@echo "🚀 Deployment Documentation:"
-	@echo "   deployment/README.md"
-	@echo ""
-	@echo "⚙️ Configuration Documentation:"
-	@echo "   config-files/README.md"
+fresh: ## Fresh install with seeders
+	@echo "Fresh install..."
+	php artisan migrate:fresh --seed
+
+# Database commands
+db-status: ## Check database status
+	@echo "Database status:"
+	php artisan migrate:status
+
+db-reset: ## Reset database
+	@echo "Resetting database..."
+	php artisan migrate:fresh
+
+# Utility commands
+routes: ## List all routes
+	@echo "Available routes:"
+	php artisan route:list
+
+config: ## Show configuration
+	@echo "Configuration status:"
+	php artisan config:show
+
+logs: ## Show recent logs
+	@echo "Recent logs:"
+	tail -n 50 storage/logs/laravel.log
+
+# Development helpers
+create-admin: ## Create admin user
+	@echo "Creating admin user..."
+	php artisan tinker --execute="App\Models\User::updateOrCreate(['email' => 'admin@example.com'], ['name' => 'Admin User', 'password' => bcrypt('password'), 'email_verified_at' => now(), 'role' => 'admin']); echo 'Admin user created/updated';"
+
+create-test-user: ## Create test user
+	@echo "Creating test user..."
+	php artisan tinker --execute="App\Models\User::updateOrCreate(['email' => 'test@test.com'], ['name' => 'Test User', 'password' => bcrypt('123456'), 'email_verified_at' => now(), 'role' => 'student']); echo 'Test user created/updated';"
+
+# Production commands
+deploy: ## Deploy to production
+	@echo "Deploying to production..."
+	composer install --optimize-autoloader --no-dev
+	php artisan config:cache
+	php artisan route:cache
+	php artisan view:cache
+	npm run build
+
+# Health checks
+health: ## Check application health
+	@echo "Checking application health..."
+	php artisan route:list | head -5
+	php artisan migrate:status | head -5
+	@echo "Health check completed"

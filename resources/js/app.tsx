@@ -42,7 +42,13 @@ createInertiaApp({
             delete (el as any)._reactRootContainer;
         }
 
+        // Clear the element content
+        el.innerHTML = '';
+
         const root = createRoot(el);
+        
+        // Store reference to prevent duplicate creation
+        (el as any)._reactRootContainer = root;
 
         root.render(
             <ErrorBoundary FallbackComponent={ErrorFallback}>

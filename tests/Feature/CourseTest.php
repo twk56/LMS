@@ -80,11 +80,20 @@ class CourseTest extends TestCase
             'title' => 'Test Course',
             'description' => 'Test Description',
             'status' => 'published',
+            'category_option' => 'existing',
             'category_id' => $this->category->id,
         ];
 
         $response = $this->actingAs($this->admin)->post('/courses', $courseData);
 
+        // Debug the response
+        if ($response->status() !== 302) {
+            dump('Response status: ' . $response->status());
+            dump('Response content: ' . $response->getContent());
+        }
+        
+        $response->assertStatus(302); // Should redirect after successful creation
+        
         $this->assertDatabaseHas('courses', [
             'title' => 'Test Course',
             'description' => 'Test Description',

@@ -95,8 +95,13 @@ export default function LessonShow({ lesson, course, nextLesson, previousLesson,
                             <form onSubmit={(e) => {
                                 e.preventDefault();
                                 router.post(`/courses/${course.id}/lessons/${lesson.id}/complete`, {}, {
+                                    onSuccess: () => {
+                                        // Refresh the page to show updated progress
+                                        window.location.reload();
+                                    },
                                     onError: (errors: any) => {
-                                        console.error('Error enrolling in lesson:', errors);
+                                        console.error('Error completing lesson:', errors);
+                                        alert('เกิดข้อผิดพลาดในการบันทึกการเสร็จสิ้นบทเรียน');
                                     }
                                 });
                             }}>

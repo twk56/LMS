@@ -1,9 +1,9 @@
-import { Link } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, User, Bell, HelpCircle } from 'lucide-react';
+import { LogOut, Settings, User, Bell, HelpCircle, LoaderCircle } from 'lucide-react';
 
 interface UserMenuContentProps {
     user: {
@@ -15,6 +15,11 @@ interface UserMenuContentProps {
 
 export function UserMenuContent({ user }: UserMenuContentProps) {
     const mobileNav = useMobileNavigation();
+    const { post: logoutPost, processing: logoutProcessing } = useForm();
+    
+    const handleLogout = () => {
+        logoutPost(route('logout'));
+    };
     
     // Create a proper cleanup function
     const cleanup = () => {
@@ -65,10 +70,19 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
             <DropdownMenuSeparator />
             
             <DropdownMenuItem asChild>
-                <Link href={route('logout')} method="post" as="button" className="user-menu-item">
-                    <LogOut className="mr-2 h-4 w-4" />
+                <Button 
+                    variant="ghost" 
+                    className="user-menu-item w-full justify-start"
+                    onClick={handleLogout}
+                    disabled={logoutProcessing}
+                >
+                    {logoutProcessing ? (
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <LogOut className="mr-2 h-4 w-4" />
+                    )}
                     <span>Log out</span>
-                </Link>
+                </Button>
             </DropdownMenuItem>
         </DropdownMenuContent>
     );
